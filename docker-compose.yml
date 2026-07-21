@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # 1. MongoDB Database Container
+  # ============================================================================
+  mongodb:
+    image: mongo:6.0
+    container_name: payment-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-payment_db}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ============================================================================
+  # 2. Payment REST API Service Container (Python Flask + Gunicorn / Auto-Reload)
+  # ============================================================================
+  payment-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: payment-backend-api
+    restart: always
+    environment:
+      PORT: 5000
+      MONGO_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-password}@mongodb:27017/${MONGO_INITDB_DATABASE:-payment_db}?authSource=admin
+      DB_NAME: ${MONGO_INITDB_DATABASE:-payment_db}
+      FLASK_DEBUG: "1"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ============================================================================
+  # 3. GUI Web Dashboard Container (Python Flask Web App + Hot Reloading)
+  # ============================================================================
+  gui:
+    build:
+      context: ./gui
+      dockerfile: Dockerfile
+    container_name: payment-gui-dashboard
+    restart: always
+    environment:
+      PORT: 8501
+      BACKEND_URL: http://payment-service:5000
+      FLASK_DEBUG: "1"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./gui:/app
+    depends_on:
+      payment-service:
+        condition: service_healthy
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+# ============================================================================
+# Networks & Volumes Configuration
+# ============================================================================
+networks:
+  payment-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

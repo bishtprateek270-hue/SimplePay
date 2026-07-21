@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Merchant Profile & Settings | SimplePay{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Merchant Account Settings</h1>
+        <p class="page-description">Manage enterprise profile, API secret keys, security preferences, and webhook listeners.</p>
+    </div>
+</div>
+
+<!-- Profile Overview Card -->
+<div class="card" style="margin-bottom: 28px; background: linear-gradient(135deg, #13161c 0%, #1a1e26 100%);">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div id="profileAvatarCircle" style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8rem; box-shadow: 0 8px 25px rgba(16,185,129,0.4);">
+                AB
+            </div>
+            <div>
+                <h2 id="profileNameHeading" style="font-size: 1.4rem; font-weight: 700;">Alexander Bisht</h2>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+                    <span id="profileRoleBadge" class="status-pill status-succeeded">Chief Technology Officer</span>
+                    <span id="profileOrgText" style="font-size: 0.85rem; color: var(--text-muted);">SimplePay Enterprise Corp</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: right;">
+            <span class="env-pill" style="font-size: 0.8rem;"><i class="fa-solid fa-circle-check"></i> Account Verified</span>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px;">ID: `USR-90218-ENT`</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 28px;">
+    <!-- Profile Form -->
+    <div class="card">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 20px;">Account & Organization Profile</h3>
+        
+        <form id="profileUpdateForm" onsubmit="handleProfileUpdate(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="prof_full_name" class="form-control" value="Alexander Bisht" onkeyup="updateLiveProfileInitials()" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="prof_email" class="form-control" value="admin@simplepay.io" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Organization Name</label>
+                <input type="text" id="prof_organization" class="form-control" value="SimplePay Enterprise Corp" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Webhook Listener URL</label>
+                <input type="url" id="prof_webhook_url" class="form-control" value="https://api.simplepay.io/webhooks/v1">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btnSaveProfile">
+                <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- API Keys & Security Settings -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Secret API Key Card -->
+        <div class="card">
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 12px;">Live API Secret Key</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Use this key to authenticate REST API requests in production.</p>
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="password" id="profApiKey" class="form-control" value="sk_live_9f82a10b4c739e1204d" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;">
+                <button class="btn btn-secondary btn-sm" onclick="toggleKeyVisibility()" title="Show/Hide Key">
+                    <i class="fa-solid fa-eye" id="eyeIcon"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="copyApiKey()" title="Copy Key">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+            </div>
+            
+            <button class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;" onclick="alert('API key regenerated successfully!')">
+                <i class="fa-solid fa-key"></i> Regenerate Secret Key
+            </button>
+        </div>
+
+        <!-- Security Preferences -->
+        <div class="card">
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;">Security Preferences</h3>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <div style="font-size: 0.88rem; font-weight: 600;">Two-Factor Authentication (2FA)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Require TOTP authenticator code</div>
+                </div>
+                <input type="checkbox" id="prof2fa" checked style="width: 18px; height: 18px; cursor: pointer;">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.88rem; font-weight: 600;">Payment Email Notifications</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Receive alerts on charges & refunds</div>
+                </div>
+                <input type="checkbox" id="profEmailNotif" checked style="width: 18px; height: 18px; cursor: pointer;">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadUserProfile();
+});
+
+function updateLiveProfileInitials() {
+    const val = document.getElementById('prof_full_name').value.trim();
+    if (val) {
+        const initials = getInitials(val);
+        document.getElementById('profileAvatarCircle').innerText = initials;
+        document.getElementById('topbarAvatarInitials').innerText = initials;
+        document.getElementById('profileNameHeading').innerText = val;
+    }
+}
+
+async function loadUserProfile() {
+    try {
+        const res = await fetch('/api/proxy/profile');
+        const data = await res.json();
+        const prof = data.data || {};
+
+        if (prof.full_name) {
+            document.getElementById('profileNameHeading').innerText = prof.full_name;
+            document.getElementById('prof_full_name').value = prof.full_name;
+            const initials = getInitials(prof.full_name);
+            document.getElementById('profileAvatarCircle').innerText = initials;
+            document.getElementById('topbarAvatarInitials').innerText = initials;
+        }
+        if (prof.email) document.getElementById('prof_email').value = prof.email;
+        if (prof.organization) {
+            document.getElementById('profileOrgText').innerText = prof.organization;
+            document.getElementById('prof_organization').value = prof.organization;
+        }
+        if (prof.webhook_url) document.getElementById('prof_webhook_url').value = prof.webhook_url;
+        if (prof.api_key) document.getElementById('profApiKey').value = prof.api_key;
+        if (prof.two_factor_enabled !== undefined) document.getElementById('prof2fa').checked = prof.two_factor_enabled;
+        if (prof.email_notifications !== undefined) document.getElementById('profEmailNotif').checked = prof.email_notifications;
+
+    } catch (err) {
+        console.error("Failed to load profile:", err);
+    }
+}
+
+async function handleProfileUpdate(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btnSaveProfile');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+    const payload = {
+        full_name: document.getElementById('prof_full_name').value.trim(),
+        email: document.getElementById('prof_email').value.trim(),
+        organization: document.getElementById('prof_organization').value.trim(),
+        webhook_url: document.getElementById('prof_webhook_url').value.trim(),
+        two_factor_enabled: document.getElementById('prof2fa').checked,
+        email_notifications: document.getElementById('profEmailNotif').checked
+    };
+
+    try {
+        const res = await fetch('/api/proxy/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert("✅ Profile updated successfully! All app avatars and card defaults updated.");
+            loadUserProfile();
+        } else {
+            alert(`❌ Update failed: ${data.error}`);
+        }
+    } catch (err) {
+        alert(`Network Error: ${err.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Profile Changes';
+    }
+}
+
+function toggleKeyVisibility() {
+    const input = document.getElementById('profApiKey');
+    const icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+    }
+}
+
+function copyApiKey() {
+    const input = document.getElementById('profApiKey');
+    navigator.clipboard.writeText(input.value);
+    alert("Copied API Secret Key to clipboard!");
+}
+</script>
+{% endblock %}

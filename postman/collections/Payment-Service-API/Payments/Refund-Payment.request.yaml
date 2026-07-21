@@ -1,0 +1,5 @@
+$kind: http-request
+name: Refund Payment
+method: PUT
+url: '{{base_url}}/api/payments/{{payment_id}}/refund'
+order: 4000

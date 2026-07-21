@@ -1,0 +1,6 @@
+$kind: collection
+name: Payment Service API
+description: 'API collection for the Payment Service backend — covers payments, cards, profile, analytics, and utilities.'
+variables:
+  - key: base_url
+    value: 'http://localhost:5000'

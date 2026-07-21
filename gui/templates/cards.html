@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block title %}Credit Card Wallet & Virtual Cards | SimplePay{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Credit Card Wallet</h1>
+        <p class="page-description">Manage saved credit/debit cards, set default payment methods, and configure authorization cards.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openAddCardModal()">
+        <i class="fa-solid fa-plus"></i> Add New Credit Card
+    </button>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 28px;">
+    <!-- Interactive Visual Card Preview Card -->
+    <div class="card" style="background: rgba(19, 22, 28, 0.9);">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 15px;">Live Visual Card Preview</h3>
+        
+        <!-- Authentic Visual Credit Card Widget -->
+        <div id="visualCreditCard" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 18px; padding: 24px; color: white; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); position: relative; overflow: hidden; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <div style="width: 42px; height: 32px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 6px; border: 1px solid #fbbf24;"></div>
+                <div id="previewCardBrand" style="font-weight: 800; font-size: 1.2rem; font-style: italic; color: white;">VISA</div>
+            </div>
+            
+            <div id="previewCardNum" style="font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; letter-spacing: 3px; margin-bottom: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                •••• •••• •••• 4242
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <div style="font-size: 0.65rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 1px;">Card Holder</div>
+                    <div id="previewCardHolder" style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: #ffffff;">ALEXANDER BISHT</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.65rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 1px;">Expires</div>
+                    <div id="previewCardExp" style="font-size: 0.88rem; font-weight: 700; color: #ffffff;">12/28</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--primary); margin-right: 4px;"></i> PCI-DSS Level 1 Encrypted Storage
+        </div>
+    </div>
+
+    <!-- Saved Credit Cards Grid -->
+    <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;">Saved Credit Cards</h3>
+        <div id="savedCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading credit cards...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Add New Credit Card Modal -->
+<div class="modal-overlay" id="addCardModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Add New Credit / Debit Card</div>
+            <button class="modal-close" onclick="closeAddCardModal()">&times;</button>
+        </div>
+        <form id="addCardForm" onsubmit="handleAddCardSubmit(event)">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Cardholder Name *</label>
+                    <input type="text" id="new_cardholder_name" class="form-control" placeholder="e.g. ALEXANDER BISHT" onkeyup="updateLiveCardPreview()" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Card Number *</label>
+                    <input type="text" id="new_card_number" class="form-control" placeholder="4532 8910 4242 4242" max_length="19" onkeyup="updateLiveCardPreview()" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label class="form-label">Exp Month</label>
+                        <select id="new_exp_month" class="form-control" onchange="updateLiveCardPreview()">
+                            <option value="01">01 - Jan</option><option value="02">02 - Feb</option>
+                            <option value="03">03 - Mar</option><option value="04">04 - Apr</option>
+                            <option value="05">05 - May</option><option value="06">06 - Jun</option>
+                            <option value="07">07 - Jul</option><option value="08">08 - Aug</option>
+                            <option value="09">09 - Sep</option><option value="10">10 - Oct</option>
+                            <option value="11">11 - Nov</option><option value="12" selected>12 - Dec</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Exp Year</label>
+                        <select id="new_exp_year" class="form-control" onchange="updateLiveCardPreview()">
+                            <option value="2026">2026</option><option value="2027">2027</option>
+                            <option value="2028" selected>2028</option><option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CVV / CVC</label>
+                        <input type="password" id="new_cvv" class="form-control" placeholder="•••" max_length="4" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddCardModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSaveCard">
+                    <i class="fa-solid fa-credit-card"></i> Save Credit Card
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadSavedCards();
+    loadProfileNameForCards();
+});
+
+async function loadProfileNameForCards() {
+    try {
+        const res = await fetch('/api/proxy/profile');
+        const data = await res.json();
+        if (data.data && data.data.full_name) {
+            document.getElementById('previewCardHolder').innerText = data.data.full_name.toUpperCase();
+            document.getElementById('new_cardholder_name').value = data.data.full_name.toUpperCase();
+        }
+    } catch(e){}
+}
+
+async function loadSavedCards() {
+    try {
+        const res = await fetch('/api/proxy/cards');
+        const data = await res.json();
+        renderCardsGrid(data.data || []);
+    } catch (err) {
+        console.error("Failed to load cards:", err);
+    }
+}
+
+function renderCardsGrid(cards) {
+    const container = document.getElementById('savedCardsGrid');
+    if (!cards || cards.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No credit cards saved. Click "Add New Credit Card" to store a payment card.</div>';
+        return;
+    }
+
+    container.innerHTML = cards.map(c => `
+        <div class="card" style="background: ${c.color_gradient || 'linear-gradient(135deg, #13161c 0%, #1a1e26 100%)'}; border: 1px solid rgba(255,255,255,0.12); padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <div style="font-weight: 800; font-size: 1.1rem; font-style: italic; color: white;">${c.brand}</div>
+                ${c.is_default ? '<span class="status-pill status-succeeded" style="font-size: 0.7rem;">DEFAULT</span>' : `<button class="btn btn-secondary btn-sm" onclick="setDefaultCard('${c.card_id}')">Set Default</button>`}
+            </div>
+
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 18px; color: white;">
+                •••• •••• •••• ${c.last4}
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase;">Holder</div>
+                    <div style="font-size: 0.82rem; font-weight: 700; color: white;">${c.cardholder_name}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.8rem; color: #94a3b8;">${c.exp_month}/${c.exp_year.slice(-2)}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeCard('${c.card_id}')" title="Remove Card">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function openAddCardModal() {
+    document.getElementById('addCardModal').classList.add('active');
+}
+
+function closeAddCardModal() {
+    document.getElementById('addCardModal').classList.remove('active');
+}
+
+function updateLiveCardPreview() {
+    const name = document.getElementById('new_cardholder_name').value.toUpperCase().trim();
+    const num = document.getElementById('new_card_number').value.replace(/\s+/g, '');
+    const month = document.getElementById('new_exp_month').value;
+    const year = document.getElementById('new_exp_year').value.slice(-2);
+
+    document.getElementById('previewCardHolder').innerText = name || "ALEXANDER BISHT";
+    
+    if (num.length >= 4) {
+        const last4 = num.slice(-4);
+        document.getElementById('previewCardNum').innerText = `•••• •••• •••• ${last4}`;
+    } else {
+        document.getElementById('previewCardNum').innerText = "•••• •••• •••• 4242";
+    }
+
+    let brand = "VISA";
+    if (num.startsWith("5")) brand = "MASTERCARD";
+    else if (num.startsWith("3")) brand = "AMEX";
+    else if (num.startsWith("6")) brand = "DISCOVER";
+    document.getElementById('previewCardBrand').innerText = brand;
+
+    document.getElementById('previewCardExp').innerText = `${month}/${year}`;
+}
+
+async function handleAddCardSubmit(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btnSaveCard');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+    const payload = {
+        cardholder_name: document.getElementById('new_cardholder_name').value.trim(),
+        card_number: document.getElementById('new_card_number').value.trim(),
+        exp_month: document.getElementById('new_exp_month').value,
+        exp_year: document.getElementById('new_exp_year').value
+    };
+
+    try {
+        const res = await fetch('/api/proxy/cards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert("✅ Credit Card saved successfully!");
+            closeAddCardModal();
+            document.getElementById('addCardForm').reset();
+            loadSavedCards();
+        } else {
+            alert(`❌ Failed to save card: ${data.error}`);
+        }
+    } catch (err) {
+        alert(`Network Error: ${err.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Save Credit Card';
+    }
+}
+
+async function setDefaultCard(cardId) {
+    try {
+        const res = await fetch(`/api/proxy/cards/${cardId}/default`, { method: 'PUT' });
+        const data = await res.json();
+        if (res.ok) {
+            loadSavedCards();
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (err) {
+        alert(`Network Error: ${err.message}`);
+    }
+}
+
+async function removeCard(cardId) {
+    if (!confirm(`Delete card ${cardId}?`)) return;
+
+    try {
+        const res = await fetch(`/api/proxy/cards/${cardId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+            alert("Card deleted.");
+            loadSavedCards();
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (err) {
+        alert(`Network Error: ${err.message}`);
+    }
+}
+</script>
+{% endblock %}

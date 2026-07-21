@@ -1,0 +1,18 @@
+$kind: http-request
+name: List Payments
+method: GET
+url: '{{base_url}}/api/payments'
+order: 2000
+queryParams:
+  - key: q
+    value: ''
+    description: 'Search query (matches customer name, transaction ID, method, description)'
+    disabled: true
+  - key: status
+    value: ''
+    description: 'Filter by status: SUCCESS, FAILED, PENDING, REFUNDED'
+    disabled: true
+  - key: method
+    value: ''
+    description: 'Filter by payment method'
+    disabled: true

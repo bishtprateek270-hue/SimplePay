@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-gui-deployment
+  labels:
+    app: payment-gui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-gui
+  template:
+    metadata:
+      labels:
+        app: payment-gui
+    spec:
+      containers:
+        - name: payment-gui
+          image: payment-gui:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8501
+          env:
+            - name: BACKEND_URL
+              value: "http://payment-backend-service:5000"
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-gui-service
+spec:
+  selector:
+    app: payment-gui
+  ports:
+    - port: 8501
+      targetPort: 8501
+  type: LoadBalancer

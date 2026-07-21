@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Developer REST API Console | SimplePay{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Developer & DevOps API Explorer</h1>
+        <p class="page-description">Inspect REST API requests, JSON responses, and HTTP headers between GUI and Payment REST microservice.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <span class="env-pill"><i class="fa-solid fa-network-wire"></i> Cluster URI: {{ backend_url }}</span>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+    <!-- Endpoint Trigger Controls -->
+    <div class="card">
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 15px;">REST Endpoints</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-secondary" onclick="executeApiCall('/health', 'GET')">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /health
+            </button>
+
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/stats', 'GET')">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /api/stats
+            </button>
+
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/payments', 'GET')">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /api/payments
+            </button>
+
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/activity-logs', 'GET')">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /api/activity-logs
+            </button>
+
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/seed', 'POST')">
+                <span class="status-pill status-pending" style="padding: 2px 8px;">POST</span> /api/seed
+            </button>
+        </div>
+    </div>
+
+    <!-- Inspector Output Console -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="font-size: 1.05rem; font-weight: 700;">Response Inspector</h3>
+            <span id="httpStatusBadge" class="status-pill status-succeeded" style="display: none;">HTTP 200 OK</span>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Equivalent cURL Request</div>
+            <pre class="code-block" id="curlOutput">curl -X GET {{ backend_url }}/health</pre>
+        </div>
+
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">JSON Payload</div>
+            <pre class="code-block" id="jsonOutput" style="min-height: 240px; color: #a5f3fc;">Click any endpoint on the left to execute API request...</pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function executeApiCall(endpoint, method) {
+    const backendUrl = "{{ backend_url }}";
+    document.getElementById('curlOutput').innerText = `curl -X ${method} ${backendUrl}${endpoint}`;
+    document.getElementById('jsonOutput').innerText = "Communicating with REST API...";
+
+    try {
+        const proxyPath = `/api/proxy${endpoint.replace('/api', '')}`;
+        const res = await fetch(proxyPath, { method: method });
+        const data = await res.json();
+
+        const badge = document.getElementById('httpStatusBadge');
+        badge.style.display = 'inline-flex';
+        badge.className = res.ok ? 'status-pill status-succeeded' : 'status-pill status-failed';
+        badge.innerText = `HTTP ${res.status}`;
+
+        document.getElementById('jsonOutput').innerText = JSON.stringify(data, null, 2);
+    } catch (err) {
+        document.getElementById('jsonOutput').innerText = JSON.stringify({ error: err.message }, null, 2);
+    }
+}
+</script>
+{% endblock %}

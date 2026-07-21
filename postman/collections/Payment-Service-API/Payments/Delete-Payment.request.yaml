@@ -1,0 +1,5 @@
+$kind: http-request
+name: Delete Payment
+method: DELETE
+url: '{{base_url}}/api/payments/{{payment_id}}'
+order: 5000

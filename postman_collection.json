@@ -1,0 +1,161 @@
+{
+  "info": {
+    "_postman_id": "a9b1c2d3-e4f5-6789-0123-456789abcdef",
+    "name": "AntiPay Containerized Payment API",
+    "description": "Complete REST API Postman Collection for the Containerized Payment Microservice.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. System Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "2. Get Payment Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "stats"]
+        }
+      }
+    },
+    {
+      "name": "3. List All Payments",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/payments",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "payments"]
+        }
+      }
+    },
+    {
+      "name": "4. Process New Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer sk_live_9f82a10b4c739e1204d" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer_name\": \"Alexander Bisht\",\n  \"amount\": 499.99,\n  \"currency\": \"USD\",\n  \"payment_method\": \"Credit Card\",\n  \"card_last4\": \"4242\",\n  \"description\": \"Postman API Test Charge\",\n  \"status\": \"SUCCESS\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/payments",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "payments"]
+        }
+      }
+    },
+    {
+      "name": "5. Get Single Payment Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/payments/TXN-8F92A1B0",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "payments", "TXN-8F92A1B0"]
+        }
+      }
+    },
+    {
+      "name": "6. Issue Refund for Payment",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/payments/TXN-8F92A1B0/refund",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "payments", "TXN-8F92A1B0", "refund"]
+        }
+      }
+    },
+    {
+      "name": "7. List Saved Credit Cards",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/cards",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "cards"]
+        }
+      }
+    },
+    {
+      "name": "8. Add New Credit Card",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cardholder_name\": \"ALEXANDER BISHT\",\n  \"card_number\": \"4532891042424242\",\n  \"exp_month\": \"12\",\n  \"exp_year\": \"2028\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/cards",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "cards"]
+        }
+      }
+    },
+    {
+      "name": "9. Get Merchant Profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "profile"]
+        }
+      }
+    },
+    {
+      "name": "10. Get System Audit Logs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/activity-logs",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "activity-logs"]
+        }
+      }
+    }
+  ]
+}

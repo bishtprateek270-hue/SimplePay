@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | SimplePay</title>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #08090a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(19, 22, 28, 0.95);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            backdrop-filter: blur(16px);
+        }
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        .auth-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+        .auth-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: white;
+            margin: 0 0 6px 0;
+            text-align: center;
+        }
+        .auth-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .auth-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-brand">
+            <div class="auth-logo"><i class="fa-solid fa-bolt"></i></div>
+            <div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: white;">SimplePay</div>
+            </div>
+        </div>
+
+        <h1 class="auth-title">Create Merchant Account</h1>
+        <p class="auth-subtitle">Sign up to access your payment dashboard and profile.</p>
+
+        <div id="authAlert" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; text-align: center;"></div>
+
+        <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
+            <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-user" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
+                    <input type="text" id="reg_full_name" class="form-control" style="padding-left: 40px;" placeholder="e.g. Jane Doe" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-envelope" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
+                    <input type="email" id="reg_email" class="form-control" style="padding-left: 40px;" placeholder="jane@company.com" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Organization / Business Name</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-building" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
+                    <input type="text" id="reg_organization" class="form-control" style="padding-left: 40px;" placeholder="Acme Enterprise Corp">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label">Create Password *</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-lock" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
+                    <input type="password" id="reg_password" class="form-control" style="padding-left: 40px; padding-right: 40px;" placeholder="••••••••" required minlength="4">
+                    <i class="fa-solid fa-eye" id="toggleRegPass" style="position: absolute; right: 14px; top: 14px; color: var(--text-dim); cursor: pointer;" onclick="togglePasswordVisibility('reg_password', 'toggleRegPass')"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; font-weight: 700;">
+                <i class="fa-solid fa-user-plus"></i> Create Account & Proceed
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 25px; font-size: 0.88rem; color: var(--text-muted);">
+            Already have an account? <a href="/login" class="auth-link">Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        async function handleRegisterSubmit(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnRegSubmit');
+            const alertBox = document.getElementById('authAlert');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating Account...';
+            alertBox.style.display = 'none';
+
+            const payload = {
+                full_name: document.getElementById('reg_full_name').value.trim(),
+                email: document.getElementById('reg_email').value.trim(),
+                organization: document.getElementById('reg_organization').value.trim() || 'Enterprise Corp',
+                password: document.getElementById('reg_password').value.trim()
+            };
+
+            try {
+                const res = await fetch('/api/proxy/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Store user token & profile in localStorage
+                    localStorage.setItem('simplepay_token', data.token);
+                    localStorage.setItem('simplepay_user', JSON.stringify(data.user));
+
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+                    alertBox.style.color = '#10b981';
+                    alertBox.style.border = '1px solid #10b981';
+                    alertBox.innerText = '✅ Account Created Successfully! Redirecting to Profile...';
+
+                    setTimeout(() => {
+                        window.location.href = '/profile';
+                    }, 800);
+                } else {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+                    alertBox.style.color = '#ef4444';
+                    alertBox.style.border = '1px solid #ef4444';
+                    alertBox.innerText = `❌ ${data.error || 'Registration failed'}`;
+                }
+            } catch (err) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+                alertBox.style.color = '#ef4444';
+                alertBox.style.border = '1px solid #ef4444';
+                alertBox.innerText = `❌ Network Error: ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account & Proceed';
+            }
+        }
+    </script>
+</body>
+</html>

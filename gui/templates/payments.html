@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Payments & Transaction Ledger | SimplePay{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Payment Ledger</h1>
+        <p class="page-description">Complete transaction history, authorization status, and refund management.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="exportLedgerCSV()">
+            <i class="fa-solid fa-download"></i> Export CSV
+        </button>
+        <button class="btn btn-primary" onclick="openNewPaymentModal()">
+            <i class="fa-solid fa-plus"></i> Process Payment
+        </button>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-header-tools">
+        <div style="display: flex; gap: 12px; flex: 1;">
+            <div style="position: relative; width: 280px;">
+                <input type="text" id="ledgerSearchInput" class="form-control" placeholder="Search reference, customer..." onkeyup="filterLedger()">
+            </div>
+            
+            <select id="statusFilterSelect" class="form-control" style="width: 160px;" onchange="filterLedger()">
+                <option value="ALL">All Statuses</option>
+                <option value="SUCCESS">Succeeded</option>
+                <option value="FAILED">Failed</option>
+                <option value="PENDING">Pending</option>
+                <option value="REFUNDED">Refunded</option>
+            </select>
+
+            <select id="methodFilterSelect" class="form-control" style="width: 170px;" onchange="filterLedger()">
+                <option value="ALL">All Payment Methods</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Apple Pay">Apple Pay</option>
+                <option value="Google Pay">Google Pay</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Wire Transfer">Wire Transfer</option>
+            </select>
+        </div>
+        
+        <button class="btn btn-secondary btn-sm" onclick="loadPaymentsLedger()">
+            <i class="fa-solid fa-arrows-rotate"></i> Reload
+        </button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Customer Name</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ledgerTbody">
+                <tr><td colspan="8" style="text-align:center; padding: 30px; color: var(--text-muted);">Loading payment records...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal-overlay" id="receiptModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Payment Details & Receipt</div>
+            <button class="modal-close" onclick="closeReceiptModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="receiptModalBody">
+            Loading transaction details...
+        </div>
+        <div class="modal-footer" id="receiptModalFooter">
+            <button class="btn btn-secondary" onclick="closeReceiptModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPaymentsData = [];
+
+async function loadPaymentsLedger() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const initialQuery = searchParams.get('q') || '';
+    if (initialQuery) document.getElementById('ledgerSearchInput').value = initialQuery;
+
+    try {
+        const res = await fetch('/api/proxy/payments');
+        const data = await res.json();
+        currentPaymentsData = data.data || [];
+        filterLedger();
+    } catch (err) {
+        console.error("Failed to load ledger:", err);
+    }
+}
+
+function filterLedger() {
+    const q = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
+    const st = document.getElementById('statusFilterSelect').value;
+    const meth = document.getElementById('methodFilterSelect').value;
+
+    const filtered = currentPaymentsData.filter(item => {
+        const matchesQ = !q || 
+            item.transaction_id.toLowerCase().includes(q) || 
+            item.customer_name.toLowerCase().includes(q) || 
+            (item.description && item.description.toLowerCase().includes(q));
+            
+        const matchesSt = (st === 'ALL') || (item.status === st);
+        const matchesMeth = (meth === 'ALL') || (item.payment_method === meth);
+
+        return matchesQ && matchesSt && matchesMeth;
+    });
+
+    renderLedgerTable(filtered);
+}
+
+function renderLedgerTable(list) {
+    const tbody = document.getElementById('ledgerTbody');
+    if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 35px; color: var(--text-muted);">No payment records found matching criteria.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map(item => `
+        <tr>
+            <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--primary); font-weight: 600;">${item.transaction_id}</td>
+            <td style="font-weight: 600;">${item.customer_name}</td>
+            <td style="font-weight: 700;">${formatCurrency(item.amount, item.currency)}</td>
+            <td><code>${item.currency || 'USD'}</code></td>
+            <td><i class="fa-solid fa-credit-card" style="margin-right: 6px; color: var(--text-dim);"></i> ${item.payment_method}</td>
+            <td>${getStatusPillHTML(item.status)}</td>
+            <td style="color: var(--text-dim); font-size: 0.82rem;">${new Date(item.created_at).toLocaleString()}</td>
+            <td style="text-align: right;">
+                <button class="btn btn-secondary btn-sm" onclick="viewReceipt('${item.transaction_id}')">
+                    <i class="fa-solid fa-receipt"></i> Details
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function viewReceipt(txnId) {
+    const item = currentPaymentsData.find(p => p.transaction_id === txnId);
+    if (!item) return;
+
+    const body = document.getElementById('receiptModalBody');
+    body.innerHTML = `
+        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Transaction Reference</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; color: var(--primary); font-weight: 700;">${item.transaction_id}</div>
+            
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 0.88rem;">
+                <div>
+                    <span style="color: var(--text-muted);">Customer:</span><br><strong>${item.customer_name}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Amount Paid:</span><br><strong style="font-size: 1.1rem; color: var(--text-main);">${formatCurrency(item.amount, item.currency)}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Payment Channel:</span><br><strong>${item.payment_method}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Authorization Status:</span><br>${getStatusPillHTML(item.status)}
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; font-size: 0.82rem; color: var(--text-muted);">
+                <strong>Reference Note:</strong> ${item.description || 'Standard Payment Charge'}
+            </div>
+        </div>
+    `;
+
+    const footer = document.getElementById('receiptModalFooter');
+    footer.innerHTML = `
+        <button class="btn btn-secondary" onclick="closeReceiptModal()">Close</button>
+        ${item.status !== 'REFUNDED' ? `<button class="btn btn-primary" onclick="issueRefund('${item.transaction_id}')"><i class="fa-solid fa-rotate-left"></i> Issue Refund</button>` : ''}
+        <button class="btn btn-danger" onclick="deleteTxn('${item.transaction_id}')"><i class="fa-solid fa-trash"></i> Delete</button>
+    `;
+
+    document.getElementById('receiptModal').classList.add('active');
+}
+
+function closeReceiptModal() {
+    document.getElementById('receiptModal').classList.remove('active');
+}
+
+async function issueRefund(txnId) {
+    if (!confirm(`Are you sure you want to issue a full refund for transaction ${txnId}?`)) return;
+
+    try {
+        const res = await fetch(`/api/proxy/payments/${txnId}/refund`, { method: 'PUT' });
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("✅ Refund processed successfully!");
+            closeReceiptModal();
+            loadPaymentsLedger();
+        } else {
+            alert(`❌ Refund failed: ${data.error}`);
+        }
+    } catch (err) {
+        alert(`Network Error: ${err.message}`);
+    }
+}
+
+async function deleteTxn(txnId) {
+    if (!confirm(`Delete payment record ${txnId}? This action cannot be undone.`)) return;
+
+    try {
+        const res = await fetch(`/api/proxy/payments/${txnId}`, { method: 'DELETE' });
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("✅ Payment record deleted.");
+            closeReceiptModal();
+            loadPaymentsLedger();
+        } else {
+            alert(`❌ Deletion failed: ${data.error}`);
+        }
+    } catch (err) {
+        alert(`Network Error: ${err.message}`);
+    }
+}
+
+function exportLedgerCSV() {
+    if (!currentPaymentsData || currentPaymentsData.length === 0) {
+        alert("No data available to export.");
+        return;
+    }
+
+    const headers = ["transaction_id", "customer_name", "amount", "currency", "payment_method", "status", "created_at"];
+    const rows = currentPaymentsData.map(p => headers.map(h => `"${p[h] || ''}"`).join(','));
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `antipay_ledger_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Activity Logs
+method: GET
+url: '{{base_url}}/api/activity-logs'
+order: 2000

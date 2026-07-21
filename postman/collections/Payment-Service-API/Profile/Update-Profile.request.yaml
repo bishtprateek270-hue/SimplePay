@@ -1,0 +1,19 @@
+$kind: http-request
+name: Update Profile
+method: PUT
+url: '{{base_url}}/api/profile'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "full_name": "Alexander Bisht",
+      "email": "admin@antipay.io",
+      "organization": "AntiPay Enterprise Corp",
+      "webhook_url": "https://api.antipay.io/webhooks/v1",
+      "email_notifications": true,
+      "two_factor_enabled": true
+    }

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Delete Card
+method: DELETE
+url: '{{base_url}}/api/cards/{{card_id}}'
+order: 3000

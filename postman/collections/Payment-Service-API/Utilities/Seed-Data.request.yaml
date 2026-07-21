@@ -1,0 +1,5 @@
+$kind: http-request
+name: Seed Data
+method: POST
+url: '{{base_url}}/api/seed'
+order: 1000

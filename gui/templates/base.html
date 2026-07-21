@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SimplePay{% endblock %}</title>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+        <div class="brand-header">
+            <div class="brand-logo">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+                <div class="brand-title">SimplePay</div>
+            </div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-label">Core Platform</div>
+            <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <i class="fa-solid fa-chart-pie"></i> Executive Dashboard
+            </a>
+            <a href="/payments" class="nav-item {% if request.path == '/payments' %}active{% endif %}">
+                <i class="fa-solid fa-credit-card"></i> Payments & Ledger
+            </a>
+            <a href="/cards" class="nav-item {% if request.path == '/cards' %}active{% endif %}">
+                <i class="fa-solid fa-wallet"></i> Credit Card Wallet
+            </a>
+            <a href="/qr-payments" class="nav-item {% if request.path == '/qr-payments' %}active{% endif %}">
+                <i class="fa-solid fa-qrcode"></i> QR Receive & Scan
+            </a>
+            <a href="/analytics" class="nav-item {% if request.path == '/analytics' %}active{% endif %}">
+                <i class="fa-solid fa-chart-line"></i> Financial Analytics
+            </a>
+
+            <div class="nav-label" style="margin-top: 15px;">Account & Settings</div>
+            <a href="/profile" class="nav-item {% if request.path == '/profile' %}active{% endif %}">
+                <i class="fa-solid fa-user-gear"></i> Profile & API Keys
+            </a>
+            <a href="/api-inspector" class="nav-item {% if request.path == '/api-inspector' %}active{% endif %}">
+                <i class="fa-solid fa-terminal"></i> REST API Explorer
+            </a>
+            <a href="javascript:void(0)" onclick="handleLogout()" class="nav-item" style="color: #ef4444; margin-top: 10px;">
+                <i class="fa-solid fa-right-from-bracket"></i> Sign Out / Logout
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 600;">System Cluster</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">3 Docker Containers</div>
+                </div>
+                <button onclick="triggerSeedData()" class="btn btn-secondary btn-sm" title="Seed Demo Data">
+                    <i class="fa-solid fa-database"></i> Seed
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+        <!-- Top Navigation Header -->
+        <header class="top-header">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="globalSearchInput" placeholder="Search payments, customers, cards..." onkeyup="handleGlobalSearch(event)">
+            </div>
+
+            <div class="header-actions">
+                <div class="env-pill">
+                    <div class="pulse-dot"></div>
+                    <span>LIVE PRODUCTION</span>
+                </div>
+                
+                <a href="/profile" style="text-decoration: none; display: flex; align-items: center; gap: 10px;" title="View Profile">
+                    <div id="topbarAvatarInitials" style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);">
+                        AB
+                    </div>
+                    <span id="topbarUserNameText" style="font-size: 0.88rem; font-weight: 600; color: white;">Alexander Bisht</span>
+                </a>
+
+                <a href="/qr-payments" class="btn btn-secondary btn-sm" title="Scan QR Code to Pay" style="padding: 8px 12px;">
+                    <i class="fa-solid fa-qrcode"></i> Scan QR
+                </a>
+
+                <button class="btn btn-secondary btn-sm" onclick="handleLogout()" title="Log Out" style="padding: 8px 12px;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+
+                <button class="btn btn-primary" onclick="openNewPaymentModal()">
+                    <i class="fa-solid fa-plus"></i> Process Payment
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Dynamic Content -->
+        <main class="content-area">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- New Payment Modal -->
+    <div class="modal-overlay" id="newPaymentModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">Process New Payment</div>
+                <button class="modal-close" onclick="closeNewPaymentModal()">&times;</button>
+            </div>
+            <form id="newPaymentForm" onsubmit="handlePaymentSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Customer / Business Name *</label>
+                        <input type="text" id="customer_name" class="form-control" placeholder="e.g. Acme Corp" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label class="form-label">Amount *</label>
+                            <input type="number" step="0.01" min="0.01" id="amount" class="form-control" value="250.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Currency</label>
+                            <select id="currency" class="form-control">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="INR">INR (₹)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select id="payment_method" class="form-control">
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Apple Pay">Apple Pay</option>
+                            <option value="Google Pay">Google Pay</option>
+                            <option value="PayPal">PayPal</option>
+                            <option value="Wire Transfer">Wire Transfer</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description / Invoice Ref</label>
+                        <input type="text" id="description" class="form-control" placeholder="e.g. SaaS Subscription Q3">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNewPaymentModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitPayment">
+                        <i class="fa-solid fa-lock"></i> Authorize & Charge
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

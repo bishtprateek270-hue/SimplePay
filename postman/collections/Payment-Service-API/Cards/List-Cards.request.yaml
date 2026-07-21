@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Cards
+method: GET
+url: '{{base_url}}/api/cards'
+order: 1000

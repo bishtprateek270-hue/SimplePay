@@ -1,0 +1,17 @@
+$kind: http-request
+name: Add Card
+method: POST
+url: '{{base_url}}/api/cards'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "cardholder_name": "John Doe",
+      "card_number": "4111111111111111",
+      "exp_month": "12",
+      "exp_year": "2028"
+    }

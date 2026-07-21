@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-backend-deployment
+  labels:
+    app: payment-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-backend
+  template:
+    metadata:
+      labels:
+        app: payment-backend
+    spec:
+      containers:
+        - name: payment-backend
+          image: payment-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              value: "mongodb://root:password@mongodb-service:27017/payment_db?authSource=admin"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-backend-service
+spec:
+  selector:
+    app: payment-backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+  type: ClusterIP
