@@ -5,57 +5,64 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Developer & DevOps API Explorer</h1>
-        <p class="page-description">Inspect REST API requests, JSON responses, and HTTP headers between GUI and Payment REST microservice.</p>
+        <h1 class="page-title">Developer API Explorer</h1>
+        <p class="page-description">Inspect raw REST API requests, JSON responses, and HTTP response headers between dashboard and Payment microservice.</p>
     </div>
     <div style="display: flex; gap: 10px;">
-        <span class="env-pill"><i class="fa-solid fa-network-wire"></i> Cluster URI: {{ backend_url }}</span>
+        <span class="env-pill" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.25); color: #38bdf8;">
+            <i class="fa-solid fa-network-wired" style="color: #38bdf8; margin-right: 4px;"></i> Cluster URI: {{ backend_url }}
+        </span>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: start; margin-bottom: 40px;">
     <!-- Endpoint Trigger Controls -->
-    <div class="card">
-        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 15px;">REST Endpoints</h3>
+    <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 20px; letter-spacing: -0.3px;">REST API Endpoints</h3>
         
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="btn btn-secondary" onclick="executeApiCall('/health', 'GET')">
-                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /health
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn btn-secondary" onclick="executeApiCall('/health', 'GET')" style="justify-content: flex-start; padding: 12px 18px;">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px; font-weight: 800; font-size: 0.72rem; min-width: 52px; justify-content: center;">GET</span> <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-main); font-weight: 500;">/health</code>
             </button>
 
-            <button class="btn btn-secondary" onclick="executeApiCall('/api/stats', 'GET')">
-                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /api/stats
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/stats', 'GET')" style="justify-content: flex-start; padding: 12px 18px;">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px; font-weight: 800; font-size: 0.72rem; min-width: 52px; justify-content: center;">GET</span> <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-main); font-weight: 500;">/api/stats</code>
             </button>
 
-            <button class="btn btn-secondary" onclick="executeApiCall('/api/payments', 'GET')">
-                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /api/payments
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/payments', 'GET')" style="justify-content: flex-start; padding: 12px 18px;">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px; font-weight: 800; font-size: 0.72rem; min-width: 52px; justify-content: center;">GET</span> <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-main); font-weight: 500;">/api/payments</code>
             </button>
 
-            <button class="btn btn-secondary" onclick="executeApiCall('/api/activity-logs', 'GET')">
-                <span class="status-pill status-succeeded" style="padding: 2px 8px;">GET</span> /api/activity-logs
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/activity-logs', 'GET')" style="justify-content: flex-start; padding: 12px 18px;">
+                <span class="status-pill status-succeeded" style="padding: 2px 8px; font-weight: 800; font-size: 0.72rem; min-width: 52px; justify-content: center;">GET</span> <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-main); font-weight: 500;">/api/activity-logs</code>
             </button>
 
-            <button class="btn btn-secondary" onclick="executeApiCall('/api/seed', 'POST')">
-                <span class="status-pill status-pending" style="padding: 2px 8px;">POST</span> /api/seed
+            <button class="btn btn-secondary" onclick="executeApiCall('/api/seed', 'POST')" style="justify-content: flex-start; padding: 12px 18px;">
+                <span class="status-pill status-pending" style="padding: 2px 8px; font-weight: 800; font-size: 0.72rem; min-width: 52px; justify-content: center; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: #f59e0b;">POST</span> <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--text-main); font-weight: 500;">/api/seed</code>
             </button>
         </div>
     </div>
 
     <!-- Inspector Output Console -->
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 style="font-size: 1.05rem; font-weight: 700;">Response Inspector</h3>
-            <span id="httpStatusBadge" class="status-pill status-succeeded" style="display: none;">HTTP 200 OK</span>
+    <div class="card" style="background: #040508; border: 1px solid var(--border-color); box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+        <!-- Console Window Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 16px; margin-bottom: 16px;">
+            <div style="display: flex; gap: 8px;">
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            </div>
+            <span id="httpStatusBadge" class="status-pill status-succeeded" style="display: none; padding: 2px 10px; font-weight: 800; font-size: 0.7rem;">HTTP 200 OK</span>
         </div>
 
-        <div style="margin-bottom: 12px;">
-            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Equivalent cURL Request</div>
-            <pre class="code-block" id="curlOutput">curl -X GET {{ backend_url }}/health</pre>
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.8px; margin-bottom: 8px;">Equivalent cURL Request</div>
+            <pre class="code-block" id="curlOutput" style="border: none; background: rgba(0,0,0,0.3); padding: 12px; color: #a855f7;">curl -X GET {{ backend_url }}/health</pre>
         </div>
 
         <div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">JSON Payload</div>
-            <pre class="code-block" id="jsonOutput" style="min-height: 240px; color: #a5f3fc;">Click any endpoint on the left to execute API request...</pre>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.8px; margin-bottom: 8px;">JSON Payload Response</div>
+            <pre class="code-block" id="jsonOutput" style="min-height: 260px; color: #38bdf8; border: none; background: rgba(0,0,0,0.3); padding: 16px;">Click any endpoint on the left to execute API request...</pre>
         </div>
     </div>
 </div>

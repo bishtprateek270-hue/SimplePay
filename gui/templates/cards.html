@@ -6,58 +6,66 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Credit Card Wallet</h1>
-        <p class="page-description">Manage saved credit/debit cards, set default payment methods, and configure authorization cards.</p>
+        <p class="page-description">Manage stored credit/debit cards, set default funding sources, and preview virtual cards.</p>
     </div>
     <button class="btn btn-primary" onclick="openAddCardModal()">
         <i class="fa-solid fa-plus"></i> Add New Credit Card
     </button>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 28px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: start; margin-bottom: 40px;">
     <!-- Interactive Visual Card Preview Card -->
-    <div class="card" style="background: rgba(19, 22, 28, 0.9);">
-        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 15px;">Live Visual Card Preview</h3>
+    <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 20px; letter-spacing: -0.3px;">Live Visual Card Preview</h3>
         
         <!-- Authentic Visual Credit Card Widget -->
-        <div id="visualCreditCard" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 18px; padding: 24px; color: white; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); position: relative; overflow: hidden; margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <div style="width: 42px; height: 32px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 6px; border: 1px solid #fbbf24;"></div>
-                <div id="previewCardBrand" style="font-weight: 800; font-size: 1.2rem; font-style: italic; color: white;">VISA</div>
+        <div id="visualCreditCard" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #c084fc 100%); border-radius: 20px; padding: 28px; color: white; box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(99,102,241,0.2); border: 1px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; margin-bottom: 24px; aspect-ratio: 1.58 / 1; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease;">
+            <!-- Glow Overlay effect -->
+            <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%); pointer-events: none;"></div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; z-index: 2;">
+                <!-- Shiny Realistic Chip -->
+                <div style="width: 48px; height: 36px; background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f472b6 100%); border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); position: relative; box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);">
+                    <!-- Custom chip grid lines -->
+                    <div style="position: absolute; top: 0; bottom: 0; left: 33%; right: 33%; border-left: 1px solid rgba(0,0,0,0.15); border-right: 1px solid rgba(0,0,0,0.15);"></div>
+                    <div style="position: absolute; left: 0; right: 0; top: 33%; bottom: 33%; border-top: 1px solid rgba(0,0,0,0.15); border-bottom: 1px solid rgba(0,0,0,0.15);"></div>
+                </div>
+                <div id="previewCardBrand" style="font-weight: 900; font-size: 1.35rem; font-style: italic; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.25); letter-spacing: -0.5px;">VISA</div>
             </div>
             
-            <div id="previewCardNum" style="font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; letter-spacing: 3px; margin-bottom: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+            <div id="previewCardNum" style="font-family: 'JetBrains Mono', monospace; font-size: 1.35rem; letter-spacing: 3.5px; margin-bottom: 8px; text-shadow: 0 2px 5px rgba(0,0,0,0.4); z-index: 2; font-weight: 500;">
                 •••• •••• •••• 4242
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; z-index: 2;">
                 <div>
-                    <div style="font-size: 0.65rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 1px;">Card Holder</div>
-                    <div id="previewCardHolder" style="font-size: 0.88rem; font-weight: 700; text-transform: uppercase; color: #ffffff;">ALEXANDER BISHT</div>
+                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;">Card Holder</div>
+                    <div id="previewCardHolder" style="font-size: 0.95rem; font-weight: 800; text-transform: uppercase; color: #ffffff; letter-spacing: 0.2px; margin-top: 2px;">ALEXANDER BISHT</div>
                 </div>
                 <div>
-                    <div style="font-size: 0.65rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 1px;">Expires</div>
-                    <div id="previewCardExp" style="font-size: 0.88rem; font-weight: 700; color: #ffffff;">12/28</div>
+                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;">Expires</div>
+                    <div id="previewCardExp" style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin-top: 2px;">12/28</div>
                 </div>
             </div>
         </div>
 
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">
-            <i class="fa-solid fa-shield-halved" style="color: var(--primary); margin-right: 4px;"></i> PCI-DSS Level 1 Encrypted Storage
+        <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--success); font-size: 1rem;"></i> PCI-DSS Level 1 Encrypted Secure Storage
         </div>
     </div>
 
     <!-- Saved Credit Cards Grid -->
     <div>
-        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;">Saved Credit Cards</h3>
-        <div id="savedCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Loading credit cards...</div>
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 20px; letter-spacing: -0.3px;">Saved Credit Cards</h3>
+        <div id="savedCardsGrid" style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+            <div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.95rem;"><i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading credit cards...</div>
         </div>
     </div>
 </div>
 
 <!-- Add New Credit Card Modal -->
 <div class="modal-overlay" id="addCardModal">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width: 500px;">
         <div class="modal-header">
             <div class="modal-title">Add New Credit / Debit Card</div>
             <button class="modal-close" onclick="closeAddCardModal()">&times;</button>
@@ -74,7 +82,7 @@
                     <input type="text" id="new_card_number" class="form-control" placeholder="4532 8910 4242 4242" max_length="19" onkeyup="updateLiveCardPreview()" required>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Exp Month</label>
                         <select id="new_exp_month" class="form-control" onchange="updateLiveCardPreview()">
@@ -143,29 +151,29 @@ async function loadSavedCards() {
 function renderCardsGrid(cards) {
     const container = document.getElementById('savedCardsGrid');
     if (!cards || cards.length === 0) {
-        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No credit cards saved. Click "Add New Credit Card" to store a payment card.</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.95rem; border: 1px dashed var(--border-color); border-radius: var(--radius-lg); background: rgba(0,0,0,0.15);">No credit cards saved. Click "Add New Credit Card" to store a payment card.</div>';
         return;
     }
 
     container.innerHTML = cards.map(c => `
-        <div class="card" style="background: ${c.color_gradient || 'linear-gradient(135deg, #13161c 0%, #1a1e26 100%)'}; border: 1px solid rgba(255,255,255,0.12); padding: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-                <div style="font-weight: 800; font-size: 1.1rem; font-style: italic; color: white;">${c.brand}</div>
-                ${c.is_default ? '<span class="status-pill status-succeeded" style="font-size: 0.7rem;">DEFAULT</span>' : `<button class="btn btn-secondary btn-sm" onclick="setDefaultCard('${c.card_id}')">Set Default</button>`}
+        <div class="card" style="background: ${c.color_gradient || 'linear-gradient(135deg, #16192a 0%, #0d0f19 100%)'}; border: 1px solid rgba(255,255,255,0.08); padding: 24px; border-radius: var(--radius-lg);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="font-weight: 900; font-size: 1.25rem; font-style: italic; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${c.brand}</div>
+                ${c.is_default ? '<span class="status-pill status-succeeded" style="font-size: 0.75rem; font-weight: 800;">DEFAULT</span>' : `<button class="btn btn-secondary btn-sm" onclick="setDefaultCard('${c.card_id}')" style="padding: 6px 12px; font-weight: 700;">Set Default</button>`}
             </div>
 
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 18px; color: white;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 20px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
                 •••• •••• •••• ${c.last4}
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
-                    <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase;">Holder</div>
-                    <div style="font-size: 0.82rem; font-weight: 700; color: white;">${c.cardholder_name}</div>
+                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 700;">Holder</div>
+                    <div style="font-size: 0.88rem; font-weight: 800; color: white; text-transform: uppercase; margin-top: 2px;">${c.cardholder_name}</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.8rem; color: #94a3b8;">${c.exp_month}/${c.exp_year.slice(-2)}</span>
-                    <button class="btn btn-danger btn-sm" onclick="removeCard('${c.card_id}')" title="Remove Card">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 0.85rem; color: rgba(255,255,255,0.7); font-weight: 700; font-family: 'JetBrains Mono', monospace;">${c.exp_month}/${c.exp_year.slice(-2)}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeCard('${c.card_id}')" title="Remove Card" style="padding: 8px 10px;">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>

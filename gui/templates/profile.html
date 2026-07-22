@@ -5,38 +5,38 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Merchant Account Settings</h1>
-        <p class="page-description">Manage enterprise profile, API secret keys, security preferences, and webhook listeners.</p>
+        <h1 class="page-title">Merchant Settings</h1>
+        <p class="page-description">Manage enterprise profile, API credentials, security preferences, and webhook listeners.</p>
     </div>
 </div>
 
 <!-- Profile Overview Card -->
-<div class="card" style="margin-bottom: 28px; background: linear-gradient(135deg, #13161c 0%, #1a1e26 100%);">
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div id="profileAvatarCircle" style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8rem; box-shadow: 0 8px 25px rgba(16,185,129,0.4);">
+<div class="card" style="margin-bottom: 32px; background: var(--primary-gradient); color: white; border: none; box-shadow: 0 15px 35px rgba(99,102,241,0.25);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+            <div id="profileAvatarCircle" style="width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.15); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8rem; border: 2px solid rgba(255,255,255,0.25); box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
                 AB
             </div>
             <div>
-                <h2 id="profileNameHeading" style="font-size: 1.4rem; font-weight: 700;">Alexander Bisht</h2>
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
-                    <span id="profileRoleBadge" class="status-pill status-succeeded">Chief Technology Officer</span>
-                    <span id="profileOrgText" style="font-size: 0.85rem; color: var(--text-muted);">SimplePay Enterprise Corp</span>
+                <h2 id="profileNameHeading" style="font-size: 1.55rem; font-weight: 800; letter-spacing: -0.5px;">Alexander Bisht</h2>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap;">
+                    <span id="profileRoleBadge" class="status-pill" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); font-weight: 700; padding: 2px 10px; font-size: 0.72rem;">CTO & ADMINISTRATOR</span>
+                    <span id="profileOrgText" style="font-size: 0.9rem; color: rgba(255,255,255,0.85); font-weight: 600;">SimplePay Enterprise Corp</span>
                 </div>
             </div>
         </div>
 
         <div style="text-align: right;">
-            <span class="env-pill" style="font-size: 0.8rem;"><i class="fa-solid fa-circle-check"></i> Account Verified</span>
-            <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px;">ID: `USR-90218-ENT`</div>
+            <span class="status-pill status-succeeded" style="background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255,255,255,0.25);"><i class="fa-solid fa-circle-check"></i> Account Verified</span>
+            <div style="font-size: 0.78rem; color: rgba(255,255,255,0.7); margin-top: 8px; font-family: 'JetBrains Mono', monospace;">ID: USR-90218-ENT</div>
         </div>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 28px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: start; margin-bottom: 40px;">
     <!-- Profile Form -->
-    <div class="card">
-        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 20px;">Account & Organization Profile</h3>
+    <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 24px; letter-spacing: -0.3px;">Organization & Contact Profile</h3>
         
         <form id="profileUpdateForm" onsubmit="handleProfileUpdate(event)">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -60,7 +60,7 @@
                 <input type="url" id="prof_webhook_url" class="form-control" value="https://api.simplepay.io/webhooks/v1">
             </div>
 
-            <button type="submit" class="btn btn-primary" id="btnSaveProfile">
+            <button type="submit" class="btn btn-primary" id="btnSaveProfile" style="width: 100%; justify-content: center; margin-top: 10px;">
                 <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
             </button>
         </form>
@@ -69,43 +69,43 @@
     <!-- API Keys & Security Settings -->
     <div style="display: flex; flex-direction: column; gap: 24px;">
         <!-- Secret API Key Card -->
-        <div class="card">
-            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 12px;">Live API Secret Key</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">Use this key to authenticate REST API requests in production.</p>
+        <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 12px; letter-spacing: -0.3px;">Live API Secret Key</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">Use this private key to authenticate backend integration requests in production environment.</p>
             
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <input type="password" id="profApiKey" class="form-control" value="sk_live_9f82a10b4c739e1204d" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;">
-                <button class="btn btn-secondary btn-sm" onclick="toggleKeyVisibility()" title="Show/Hide Key">
-                    <i class="fa-solid fa-eye" id="eyeIcon"></i>
+            <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                <input type="password" id="profApiKey" class="form-control" value="sk_live_9f82a10b4c739e1204d" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+                <button class="btn btn-secondary btn-sm" onclick="toggleKeyVisibility()" title="Show/Hide Key" style="padding: 10px 12px;">
+                    <i class="fa-solid fa-eye" id="eyeIcon" style="color: var(--primary);"></i>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="copyApiKey()" title="Copy Key">
+                <button class="btn btn-secondary btn-sm" onclick="copyApiKey()" title="Copy Key" style="padding: 10px 12px;">
                     <i class="fa-solid fa-copy"></i>
                 </button>
             </div>
             
-            <button class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;" onclick="alert('API key regenerated successfully!')">
-                <i class="fa-solid fa-key"></i> Regenerate Secret Key
+            <button class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; font-weight: 700;" onclick="alert('API key regenerated successfully!')">
+                <i class="fa-solid fa-key" style="color: var(--primary);"></i> Regenerate Secret Key
             </button>
         </div>
 
         <!-- Security Preferences -->
-        <div class="card">
-            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 16px;">Security Preferences</h3>
+        <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 24px; letter-spacing: -0.3px;">Security Preferences</h3>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: rgba(0,0,0,0.15); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                 <div>
-                    <div style="font-size: 0.88rem; font-weight: 600;">Two-Factor Authentication (2FA)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Require TOTP authenticator code</div>
+                    <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Two-Factor Authentication (2FA)</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Require TOTP authentication token</div>
                 </div>
-                <input type="checkbox" id="prof2fa" checked style="width: 18px; height: 18px; cursor: pointer;">
+                <input type="checkbox" id="prof2fa" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);">
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                 <div>
-                    <div style="font-size: 0.88rem; font-weight: 600;">Payment Email Notifications</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Receive alerts on charges & refunds</div>
+                    <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Payment Email Alerts</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Receive push email updates on actions</div>
                 </div>
-                <input type="checkbox" id="profEmailNotif" checked style="width: 18px; height: 18px; cursor: pointer;">
+                <input type="checkbox" id="profEmailNotif" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);">
             </div>
         </div>
     </div>
@@ -203,6 +203,14 @@ function toggleKeyVisibility() {
         input.type = 'password';
         icon.className = 'fa-solid fa-eye';
     }
+}
+
+// Helper: Get initials of user
+function getInitials(name) {
+    if (!name || typeof name !== 'string') return "AB";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function copyApiKey() {

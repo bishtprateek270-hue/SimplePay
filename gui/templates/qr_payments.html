@@ -6,22 +6,22 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Personal QR Terminal & Scanner</h1>
-        <p class="page-description">Every merchant account receives a unique QR code to accept payments or scan QR codes to send funds.</p>
+        <p class="page-description">Generate unique payment QR codes to receive funds or scan an invoice QR to authorize payments instantly.</p>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 32px; align-items: start; margin-bottom: 40px;">
 
     <!-- SECTION 1: RECEIVE PAYMENT (UNIQUE USER QR GENERATOR) -->
-    <div class="card">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">
-                <i class="fa-solid fa-qrcode" style="color: var(--primary); margin-right: 8px;"></i> Your Unique Payment QR Code
+    <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i> Payment QR Generator
             </h3>
-            <span class="status-pill status-succeeded" id="qrUserBadge">ID: USR-LOADING</span>
+            <span class="status-pill status-succeeded" id="qrUserBadge" style="font-weight: 800;">ID: USR-LOADING</span>
         </div>
 
-        <form id="qrGenForm" onsubmit="event.preventDefault(); renderUserUniqueQR();">
+        <form id="qrGenForm" onsubmit="event.preventDefault(); renderUserUniqueQR();" style="margin-bottom: 24px;">
             <div class="form-group">
                 <label class="form-label">Merchant Name *</label>
                 <input type="text" id="qr_merchant_name" class="form-control" value="Alexander Bisht" onkeyup="renderUserUniqueQR()" required>
@@ -29,10 +29,10 @@
 
             <div class="form-group">
                 <label class="form-label">Merchant Email / Handle</label>
-                <input type="text" id="qr_merchant_email" class="form-control" value="admin@antipay.io" readonly style="color: var(--text-muted);">
+                <input type="text" id="qr_merchant_email" class="form-control" value="admin@antipay.io" readonly style="color: var(--text-muted); background: rgba(255,255,255,0.01);">
             </div>
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
                 <div class="form-group">
                     <label class="form-label">Request Amount *</label>
                     <input type="number" step="0.01" min="0.01" id="qr_amount" class="form-control" value="150.00" onkeyup="renderUserUniqueQR()" required>
@@ -55,27 +55,27 @@
         </form>
 
         <!-- Dynamic Unique QR Code Card -->
-        <div style="background: rgba(8, 9, 10, 0.95); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; text-align: center; margin-top: 20px;">
-            <div style="background: white; padding: 16px; border-radius: 14px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.6); min-width: 220px; min-height: 220px;">
+        <div style="background: rgba(4, 5, 8, 0.7); border: 1px solid var(--border-color); border-radius: 18px; padding: 28px; text-align: center;">
+            <div style="background: white; padding: 20px; border-radius: 14px; display: inline-block; box-shadow: 0 15px 35px rgba(0,0,0,0.5); min-width: 240px; min-height: 240px;">
                 <img id="userQrCodeImg" src="" alt="Unique Payment QR Code" style="width: 200px; height: 200px; display: block; margin: 0 auto; border-radius: 4px;">
             </div>
             
-            <div style="margin-top: 15px; font-weight: 800; font-size: 1.25rem; color: white;">
+            <div style="margin-top: 20px; font-weight: 800; font-size: 1.4rem; color: white; letter-spacing: -0.5px;">
                 <span id="qrDisplayAmount">$150.00 USD</span>
             </div>
-            <div id="qrDisplayMerchant" style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-top: 4px;">
+            <div id="qrDisplayMerchant" style="font-size: 0.9rem; color: var(--primary); font-weight: 800; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase;">
                 Pay to: ALEXANDER BISHT
             </div>
-            <div id="qrUniqueUserString" style="font-size: 0.72rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
+            <div id="qrUniqueUserString" style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-top: 6px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 6px; display: inline-block; border: 1px solid var(--border-color);">
                 simplepay://pay?usr=USR-90218
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
                 <button class="btn btn-primary btn-sm" onclick="downloadQRCodeImage()">
-                    <i class="fa-solid fa-download"></i> Download QR Image
+                    <i class="fa-solid fa-download"></i> Download QR
                 </button>
                 <button class="btn btn-secondary btn-sm" onclick="copyPaymentQRLink()">
-                    <i class="fa-solid fa-copy"></i> Copy Unique Link
+                    <i class="fa-solid fa-copy"></i> Copy Link
                 </button>
             </div>
         </div>
@@ -83,37 +83,37 @@
 
 
     <!-- SECTION 2: SEND PAYMENT (SCANNER TERMINAL) -->
-    <div class="card">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">
-                <i class="fa-solid fa-camera-retro" style="color: var(--primary); margin-right: 8px;"></i> Send Payment (Scan QR)
+    <div class="card" style="background: rgba(15, 18, 30, 0.65);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-camera" style="color: var(--primary);"></i> Send Payment (Scan QR)
             </h3>
-            <span class="status-pill status-pending">Scanner Terminal</span>
+            <span class="status-pill status-pending" style="font-weight: 800;">Scanner Terminal</span>
         </div>
 
         <!-- Scanner Mode Tabs -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn btn-primary btn-sm" id="btnCameraTab" onclick="switchScannerMode('camera')" style="flex: 1;">
+        <div style="display: flex; gap: 12px; margin-bottom: 24px; padding: 4px; background: rgba(0,0,0,0.2); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <button class="btn btn-primary btn-sm" id="btnCameraTab" onclick="switchScannerMode('camera')" style="flex: 1; border-radius: 8px;">
                 <i class="fa-solid fa-video"></i> Camera Scanner
             </button>
-            <button class="btn btn-secondary btn-sm" id="btnUploadTab" onclick="switchScannerMode('upload')" style="flex: 1;">
+            <button class="btn btn-secondary btn-sm" id="btnUploadTab" onclick="switchScannerMode('upload')" style="flex: 1; border-radius: 8px; border: none; background: transparent;">
                 <i class="fa-solid fa-file-image"></i> Upload QR File
             </button>
         </div>
 
         <!-- Camera Scanner Viewport -->
         <div id="cameraScannerView" style="display: block;">
-            <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000; border: 1px dashed var(--border-subtle); min-height: 250px;"></div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
-                Point camera at any user's unique payment QR code to scan.
+            <div id="reader" style="width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #040508; border: 1px dashed var(--border-color); min-height: 250px;"></div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-top: 14px; font-weight: 500;">
+                <i class="fa-solid fa-circle-info" style="color: var(--primary); margin-right: 4px;"></i> Point camera at a payment QR code.
             </div>
         </div>
 
         <!-- Image File Upload Scanner Viewport -->
-        <div id="uploadScannerView" style="display: none; background: rgba(8, 9, 10, 0.8); border: 2px dashed var(--border-subtle); border-radius: 16px; padding: 40px; text-align: center;">
-            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px;"></i>
-            <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">Upload QR Code Image File</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Select a PNG, JPG, or WEBP image file</div>
+        <div id="uploadScannerView" style="display: none; background: rgba(4, 5, 8, 0.4); border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: 44px; text-align: center; transition: all 0.3s ease;">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--primary); margin-bottom: 18px; filter: drop-shadow(0 0 10px rgba(99,102,241,0.25));"></i>
+            <div style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 8px;">Upload QR Code Image</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px;">Support files: PNG, JPG, JPEG, WEBP</div>
             <input type="file" id="qrFileInput" accept="image/*" onchange="handleQRFileUpload(event)" style="display: none;">
             <button class="btn btn-primary" onclick="document.getElementById('qrFileInput').click()">
                 <i class="fa-solid fa-folder-open"></i> Browse Image File
@@ -121,13 +121,16 @@
         </div>
 
         <!-- Parsed QR Payment Output Box -->
-        <div id="scannedResultCard" style="display: none; margin-top: 20px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 14px; padding: 18px;">
-            <div style="font-weight: 700; color: #10b981; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-circle-check"></i> Valid Payment QR Code Recognized!
+        <div id="scannedResultCard" style="display: none; margin-top: 24px; background: var(--success-bg); border: 1px solid var(--success-border); border-radius: var(--radius-md); padding: 20px; transition: all 0.3s ease;">
+            <div style="font-weight: 800; color: var(--success); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+                <i class="fa-solid fa-circle-check" style="font-size: 1.15rem;"></i> Valid QR Code Recognized!
             </div>
-            <div style="font-size: 0.88rem; margin-bottom: 4px;"><strong>Recipient:</strong> <span id="scanRecipient"></span></div>
-            <div style="font-size: 0.88rem; margin-bottom: 4px;"><strong>Amount:</strong> <span id="scanAmount"></span></div>
-            <div style="font-size: 0.88rem; margin-bottom: 12px;"><strong>Description:</strong> <span id="scanDesc"></span></div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.92rem; background: rgba(0,0,0,0.1); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.03); margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between;"><strong style="color: var(--text-muted);">Recipient:</strong> <span id="scanRecipient" style="font-weight: 700; color: var(--text-main);"></span></div>
+                <div style="display: flex; justify-content: space-between;"><strong style="color: var(--text-muted);">Amount:</strong> <span id="scanAmount" style="font-weight: 800; color: var(--text-main);"></span></div>
+                <div style="display: flex; justify-content: space-between;"><strong style="color: var(--text-muted);">Description:</strong> <span id="scanDesc" style="font-weight: 700; color: var(--text-main);"></span></div>
+            </div>
 
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="executeScannedPayment()">
                 <i class="fa-solid fa-paper-plane"></i> Authorize & Send Payment Now
@@ -180,7 +183,6 @@ function renderUserUniqueQR() {
     const currency = document.getElementById('qr_currency').value;
     const desc = document.getElementById('qr_description').value.trim() || "Payment";
 
-    // Unique user payment JSON payload
     const payload = {
         app: "SimplePay",
         type: "PAYMENT_REQUEST",
@@ -196,7 +198,6 @@ function renderUserUniqueQR() {
     const jsonString = JSON.stringify(payload);
     const encodedData = encodeURIComponent(jsonString);
 
-    // Reliable fast QR code image URL
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodedData}&color=000000&bgcolor=ffffff`;
 
     const img = document.getElementById('userQrCodeImg');
@@ -204,7 +205,6 @@ function renderUserUniqueQR() {
         img.src = qrApiUrl;
     }
 
-    // Update display labels
     const sym = currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'INR' ? '₹' : '$';
     document.getElementById('qrDisplayAmount').innerText = `${sym}${amount.toFixed(2)} ${currency}`;
     document.getElementById('qrDisplayMerchant').innerText = `Pay to: ${merchant.toUpperCase()}`;
@@ -233,17 +233,32 @@ function copyPaymentQRLink() {
 
 // --- SCANNER LOGIC ---
 function switchScannerMode(mode) {
+    const btnCamera = document.getElementById('btnCameraTab');
+    const btnUpload = document.getElementById('btnUploadTab');
+    
     if (mode === 'camera') {
         document.getElementById('cameraScannerView').style.display = 'block';
         document.getElementById('uploadScannerView').style.display = 'none';
-        document.getElementById('btnCameraTab').className = 'btn btn-primary btn-sm';
-        document.getElementById('btnUploadTab').className = 'btn btn-secondary btn-sm';
+        
+        btnCamera.className = 'btn btn-primary btn-sm';
+        btnCamera.style.background = '';
+        btnCamera.style.borderColor = '';
+        
+        btnUpload.className = 'btn btn-secondary btn-sm';
+        btnUpload.style.background = 'transparent';
+        btnUpload.style.borderColor = 'transparent';
         initCameraScanner();
     } else {
         document.getElementById('cameraScannerView').style.display = 'none';
         document.getElementById('uploadScannerView').style.display = 'block';
-        document.getElementById('btnUploadTab').className = 'btn btn-primary btn-sm';
-        document.getElementById('btnCameraTab').className = 'btn btn-secondary btn-sm';
+        
+        btnUpload.className = 'btn btn-primary btn-sm';
+        btnUpload.style.background = '';
+        btnUpload.style.borderColor = '';
+        
+        btnCamera.className = 'btn btn-secondary btn-sm';
+        btnCamera.style.background = 'transparent';
+        btnCamera.style.borderColor = 'transparent';
     }
 }
 

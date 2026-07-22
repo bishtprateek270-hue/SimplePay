@@ -1,7 +1,7 @@
 import os
 import logging
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -32,43 +32,18 @@ def call_backend(endpoint, method="GET", json_data=None, params=None, headers=No
         logger.error(f"Failed to communicate with backend at {url}: {e}")
         return {"error": "Payment Service API is unavailable", "details": str(e)}, 503
 
-# --- Authentication Pages ---
-@app.route('/login')
-def login_page():
-    return render_template('login.html', backend_url=BACKEND_URL)
-
-@app.route('/register')
-def register_page():
-    return render_template('register.html', backend_url=BACKEND_URL)
-
-# --- Core Platform Pages ---
+# --- Core React SPA Platform Pages ---
 @app.route('/')
-def index():
-    return render_template('dashboard.html', backend_url=BACKEND_URL)
-
+@app.route('/login')
+@app.route('/register')
 @app.route('/payments')
-def payments():
-    return render_template('payments.html', backend_url=BACKEND_URL)
-
 @app.route('/cards')
-def cards():
-    return render_template('cards.html', backend_url=BACKEND_URL)
-
 @app.route('/qr-payments')
-def qr_payments():
-    return render_template('qr_payments.html', backend_url=BACKEND_URL)
-
 @app.route('/profile')
-def profile():
-    return render_template('profile.html', backend_url=BACKEND_URL)
-
 @app.route('/analytics')
-def analytics():
-    return render_template('analytics.html', backend_url=BACKEND_URL)
-
 @app.route('/api-inspector')
-def api_inspector():
-    return render_template('api_inspector.html', backend_url=BACKEND_URL)
+def index():
+    return send_from_directory(os.path.join(app.static_folder, 'dist'), 'index.html')
 
 # Healthcheck endpoint for Docker Compose
 @app.route('/health')

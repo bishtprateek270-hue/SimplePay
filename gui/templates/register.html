@@ -10,62 +10,76 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background-color: #08090a;
+            background-color: var(--bg-main);
+            background-image: var(--bg-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 24px;
         }
         .auth-container {
             width: 100%;
-            max-width: 440px;
-            background: rgba(19, 22, 28, 0.95);
-            border: 1px solid var(--border-subtle);
-            border-radius: 18px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            backdrop-filter: blur(16px);
+            max-width: 460px;
+            background: rgba(17, 20, 32, 0.45);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 44px;
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
         }
         .auth-brand {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            margin-bottom: 25px;
+            gap: 14px;
+            margin-bottom: 28px;
         }
         .auth-logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: var(--primary-gradient);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            font-size: 1.3rem;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
         }
         .auth-title {
-            font-size: 1.6rem;
+            font-size: 1.7rem;
             font-weight: 800;
-            color: white;
-            margin: 0 0 6px 0;
+            color: var(--text-main);
+            margin: 0 0 8px 0;
             text-align: center;
+            letter-spacing: -0.6px;
         }
         .auth-subtitle {
-            font-size: 0.88rem;
+            font-size: 0.92rem;
             color: var(--text-muted);
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 28px;
+            line-height: 1.5;
         }
         .auth-link {
             color: var(--primary);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            transition: color 0.2s ease;
         }
         .auth-link:hover {
+            color: var(--accent-purple);
             text-decoration: underline;
         }
     </style>
@@ -76,55 +90,55 @@
         <div class="auth-brand">
             <div class="auth-logo"><i class="fa-solid fa-bolt"></i></div>
             <div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: white;">SimplePay</div>
+                <div style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px;">SimplePay</div>
             </div>
         </div>
 
         <h1 class="auth-title">Create Merchant Account</h1>
-        <p class="auth-subtitle">Sign up to access your payment dashboard and profile.</p>
+        <p class="auth-subtitle">Sign up to access your personal dashboard, QR scanner, and card wallet.</p>
 
-        <div id="authAlert" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; text-align: center;"></div>
+        <div id="authAlert" style="display: none; padding: 14px; border-radius: var(--radius-md); font-size: 0.88rem; margin-bottom: 24px; text-align: center; font-weight: 600;"></div>
 
         <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
             <div class="form-group">
                 <label class="form-label">Full Name *</label>
                 <div style="position: relative;">
-                    <i class="fa-solid fa-user" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
-                    <input type="text" id="reg_full_name" class="form-control" style="padding-left: 40px;" placeholder="e.g. Jane Doe" required>
+                    <i class="fa-solid fa-user" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem;"></i>
+                    <input type="text" id="reg_full_name" class="form-control" style="padding-left: 44px;" placeholder="e.g. Jane Doe" required>
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Email Address *</label>
                 <div style="position: relative;">
-                    <i class="fa-solid fa-envelope" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
-                    <input type="email" id="reg_email" class="form-control" style="padding-left: 40px;" placeholder="jane@company.com" required>
+                    <i class="fa-solid fa-envelope" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem;"></i>
+                    <input type="email" id="reg_email" class="form-control" style="padding-left: 44px;" placeholder="jane@company.com" required>
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Organization / Business Name</label>
                 <div style="position: relative;">
-                    <i class="fa-solid fa-building" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
-                    <input type="text" id="reg_organization" class="form-control" style="padding-left: 40px;" placeholder="Acme Enterprise Corp">
+                    <i class="fa-solid fa-building" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem;"></i>
+                    <input type="text" id="reg_organization" class="form-control" style="padding-left: 44px;" placeholder="Acme Enterprise Corp">
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 24px;">
+            <div class="form-group" style="margin-bottom: 30px;">
                 <label class="form-label">Create Password *</label>
                 <div style="position: relative;">
-                    <i class="fa-solid fa-lock" style="position: absolute; left: 14px; top: 14px; color: var(--text-dim);"></i>
-                    <input type="password" id="reg_password" class="form-control" style="padding-left: 40px; padding-right: 40px;" placeholder="••••••••" required minlength="4">
-                    <i class="fa-solid fa-eye" id="toggleRegPass" style="position: absolute; right: 14px; top: 14px; color: var(--text-dim); cursor: pointer;" onclick="togglePasswordVisibility('reg_password', 'toggleRegPass')"></i>
+                    <i class="fa-solid fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem;"></i>
+                    <input type="password" id="reg_password" class="form-control" style="padding-left: 44px; padding-right: 44px;" placeholder="••••••••" required minlength="4">
+                    <i class="fa-solid fa-eye" id="toggleRegPass" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); cursor: pointer; font-size: 0.9rem;" onclick="togglePasswordVisibility('reg_password', 'toggleRegPass')"></i>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; font-weight: 700;">
+            <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width: 100%; justify-content: center; padding: 13px; font-size: 0.95rem; font-weight: 800;">
                 <i class="fa-solid fa-user-plus"></i> Create Account & Proceed
             </button>
         </form>
 
-        <div style="text-align: center; margin-top: 25px; font-size: 0.88rem; color: var(--text-muted);">
+        <div style="text-align: center; margin-top: 32px; font-size: 0.9rem; color: var(--text-muted);">
             Already have an account? <a href="/login" class="auth-link">Sign In</a>
         </div>
     </div>
@@ -168,14 +182,13 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    // Store user token & profile in localStorage
                     localStorage.setItem('simplepay_token', data.token);
                     localStorage.setItem('simplepay_user', JSON.stringify(data.user));
 
                     alertBox.style.display = 'block';
-                    alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
-                    alertBox.style.color = '#10b981';
-                    alertBox.style.border = '1px solid #10b981';
+                    alertBox.style.background = 'var(--success-bg)';
+                    alertBox.style.color = 'var(--success)';
+                    alertBox.style.border = '1px solid var(--success-border)';
                     alertBox.innerText = '✅ Account Created Successfully! Redirecting to Profile...';
 
                     setTimeout(() => {
@@ -183,16 +196,16 @@
                     }, 800);
                 } else {
                     alertBox.style.display = 'block';
-                    alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
-                    alertBox.style.color = '#ef4444';
-                    alertBox.style.border = '1px solid #ef4444';
+                    alertBox.style.background = 'var(--danger-bg)';
+                    alertBox.style.color = 'var(--danger)';
+                    alertBox.style.border = '1px solid var(--danger-border)';
                     alertBox.innerText = `❌ ${data.error || 'Registration failed'}`;
                 }
             } catch (err) {
                 alertBox.style.display = 'block';
-                alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
-                alertBox.style.color = '#ef4444';
-                alertBox.style.border = '1px solid #ef4444';
+                alertBox.style.background = 'var(--danger-bg)';
+                alertBox.style.color = 'var(--danger)';
+                alertBox.style.border = '1px solid var(--danger-border)';
                 alertBox.innerText = `❌ Network Error: ${err.message}`;
             } finally {
                 btn.disabled = false;
