@@ -1,0 +1,8 @@
+# Ignore Python caches and local virtualenvs in Docker context
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/

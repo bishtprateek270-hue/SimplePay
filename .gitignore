@@ -26,3 +26,8 @@ desktop.ini
 
 # Docker volumes
 mongodb_data/
+
+# Node / Frontend dependencies & builds
+node_modules/
+dist/
+.eslintcache
