@@ -55,6 +55,17 @@ export default function App() {
   const [dbStatus, setDbStatus] = useState('Connecting...');
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutCooldown, setLockoutCooldown] = useState(0);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutCooldown > 0) {
+      const timer = setTimeout(() => setLockoutCooldown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [lockoutCooldown]);
 
   // Modals
   const [showChargeModal, setShowChargeModal] = useState(false);
@@ -129,6 +140,12 @@ export default function App() {
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthAlert(null);
+
+    if (authView === 'login' && lockoutCooldown > 0) {
+      setAuthAlert({ type: 'error', msg: `Locked out. Please wait ${lockoutCooldown} seconds.` });
+      return;
+    }
+
     const endpoint = authView === 'login' ? '/api/proxy/auth/login' : '/api/proxy/auth/register';
     const payload = authView === 'login' 
       ? { email: authEmail, password: authPassword }
@@ -147,8 +164,23 @@ export default function App() {
         localStorage.setItem('simplepay_user', JSON.stringify(data.user));
         setToken(data.token);
         setUser(data.user);
+        setLoginAttempts(0);
+        setLockoutCooldown(0);
       } else {
-        setAuthAlert({ type: 'error', msg: data.error || 'Authentication failed' });
+        let errorMsg = data.error || 'Authentication failed';
+        
+        if (authView === 'login') {
+          const nextAttempts = loginAttempts + 1;
+          setLoginAttempts(nextAttempts);
+          if (nextAttempts >= 5) {
+            setLockoutCooldown(30);
+            errorMsg = "Too many failed attempts. You are locked out for 30 seconds.";
+          } else {
+            errorMsg = `${errorMsg} (Attempt ${nextAttempts}/5)`;
+          }
+        }
+        
+        setAuthAlert({ type: 'error', msg: errorMsg });
       }
     } catch (err) {
       setAuthAlert({ type: 'error', msg: `Connection error: ${err.message}` });
@@ -234,22 +266,47 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-              <input
-                type="password"
-                className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 dark:text-white"
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={e => setAuthPassword(e.target.value)}
-                required
-              />
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Password</label>
+                {authView === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => alert("Please contact administrator at support@simplepay.io to reset your password.")}
+                    className="text-xs font-bold text-indigo-500 dark:text-indigo-400 hover:underline hover:scale-[1.01] active:scale-[0.99] transition-all"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type={showAuthPassword ? 'text' : 'password'}
+                  className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:border-indigo-500 dark:text-white"
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAuthPassword(!showAuthPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-blue-500/20 hover:opacity-95 transition-all text-sm mt-6"
+              disabled={authView === 'login' && lockoutCooldown > 0}
+              className={`w-full py-3 bg-gradient-to-tr from-indigo-600 to-pink-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-glow-primary hover:scale-[1.01] active:scale-[0.99] transition-all text-sm mt-6 ${
+                authView === 'login' && lockoutCooldown > 0 ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              {authView === 'login' ? 'Sign In' : 'Create Account'}
+              {authView === 'login' 
+                ? (lockoutCooldown > 0 ? `Locked Out (${lockoutCooldown}s)` : 'Sign In') 
+                : 'Create Account'}
             </button>
           </form>
 
