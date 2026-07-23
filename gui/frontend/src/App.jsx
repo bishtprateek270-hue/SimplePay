@@ -30,7 +30,8 @@ import {
   ChevronRight,
   Sparkles,
   HelpCircle,
-  Building
+  Building,
+  LogOut
 } from 'lucide-react';
 
 export default function App() {
@@ -436,20 +437,35 @@ export default function App() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-card border border-border hover:bg-secondary transition-all md:hidden text-slate-500 dark:text-slate-400 shadow-sm hover:scale-105 active:scale-95"
+              title="Toggle Theme"
+            >
+              {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+            </button>
             <button
               onClick={refreshData}
-              className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400 shadow-sm"
+              className="p-2.5 rounded-xl bg-card border border-border hover:bg-secondary transition-all text-slate-500 dark:text-slate-400 shadow-sm hover:scale-105 active:scale-95"
               title="Refresh Dashboard"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
             <button
+              onClick={handleLogout}
+              className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500/20 hover:scale-105 active:scale-95 transition-all md:hidden"
+              title="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setShowChargeModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-tr from-indigo-600 to-pink-600 hover:opacity-95 text-white font-bold rounded-2xl shadow-lg shadow-glow-primary hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 text-xs md:text-sm"
+              className="flex items-center gap-2 px-3.5 py-2.5 md:px-5 bg-gradient-to-tr from-indigo-600 to-pink-600 hover:opacity-95 text-white font-bold rounded-2xl shadow-lg shadow-glow-primary hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 text-xs md:text-sm"
             >
               <Plus className="w-4 h-4" />
-              Process Charge
+              <span className="hidden sm:inline">Process Charge</span>
+              <span className="sm:hidden">Charge</span>
             </button>
           </div>
         </header>

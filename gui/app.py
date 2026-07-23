@@ -15,6 +15,12 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://payment-service:5000").rstrip("/"
 def call_backend(endpoint, method="GET", json_data=None, params=None, headers=None):
     url = f"{BACKEND_URL}{endpoint}"
     req_headers = headers or {}
+    
+    # Forward the client's Authorization token if present in request context
+    from flask import has_request_context, request
+    if has_request_context() and "Authorization" in request.headers:
+        req_headers["Authorization"] = request.headers["Authorization"]
+        
     try:
         if method == "GET":
             res = requests.get(url, params=params, headers=req_headers, timeout=5)

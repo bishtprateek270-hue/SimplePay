@@ -46,7 +46,7 @@ def hash_password(password):
     """Simple SHA256 password hash for secure MongoDB storage."""
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
-def log_activity(action, details, txn_id=None):
+def log_activity(action, details, txn_id=None, user_id=None):
     database = get_db()
     if database is not None:
         try:
@@ -54,6 +54,7 @@ def log_activity(action, details, txn_id=None):
                 "action": action,
                 "details": details,
                 "transaction_id": txn_id,
+                "user_id": user_id,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             })
         except Exception as e:
@@ -66,6 +67,16 @@ def format_doc(doc):
     if "password_hash" in doc:
         del doc["password_hash"]
     return doc
+
+def get_authenticated_user(req):
+    auth_header = req.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "").strip()
+    if not token:
+        return None
+    database = get_db()
+    if database is None:
+        return None
+    return database[USERS_COLLECTION].find_one({"auth_token": token})
 
 # --- Root & Health Endpoints ---
 @app.route('/', methods=['GET'])
@@ -231,25 +242,10 @@ def login():
 @app.route('/api/auth/me', methods=['GET'])
 def get_current_user():
     try:
-        auth_header = request.headers.get("Authorization", "")
-        token = auth_header.replace("Bearer ", "").strip()
-
-        database = get_db()
-        if database is None:
-            return jsonify({"error": "Database unavailable"}), 503
-
-        if token:
-            user = database[USERS_COLLECTION].find_one({"auth_token": token})
-            if user:
-                return jsonify({"user": format_doc(user)}), 200
-
-        # Fallback to default admin profile
-        profile = database[PROFILE_COLLECTION].find_one({})
-        if profile:
-            return jsonify({"user": format_doc(profile)}), 200
-
-        return jsonify({"error": "Unauthenticated"}), 401
-
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+        return jsonify({"user": format_doc(user)}), 200
     except Exception as e:
         return jsonify({"error": "Auth check failed", "details": str(e)}), 500
 
@@ -258,6 +254,10 @@ def get_current_user():
 @app.route('/api/payments', methods=['POST'])
 def create_payment():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid JSON payload"}), 400
@@ -292,6 +292,7 @@ def create_payment():
 
         payment_doc = {
             "transaction_id": transaction_id,
+            "user_id": user["user_id"],
             "customer_name": customer_name.strip(),
             "amount": round(amount, 2),
             "currency": currency,
@@ -306,7 +307,7 @@ def create_payment():
         result = database[COLLECTION_NAME].insert_one(payment_doc)
         payment_doc["_id"] = str(result.inserted_id)
 
-        log_activity("PAYMENT_CREATED", f"Processed {currency} ${amount:.2f} for {customer_name}", transaction_id)
+        log_activity("PAYMENT_CREATED", f"Processed {currency} ${amount:.2f} for {customer_name}", transaction_id, user_id=user["user_id"])
         return jsonify({"message": "Payment processed successfully", "data": payment_doc}), 201
 
     except Exception as e:
@@ -316,6 +317,10 @@ def create_payment():
 @app.route('/api/payments', methods=['GET'])
 def list_payments():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database service unavailable"}), 503
@@ -324,18 +329,21 @@ def list_payments():
         status_filter = request.args.get('status', '').strip().upper()
         method_filter = request.args.get('method', '').strip()
 
-        query = {}
+        query = {"user_id": user["user_id"]}
         if status_filter and status_filter != "ALL":
             query["status"] = status_filter
         if method_filter and method_filter != "ALL":
             query["payment_method"] = method_filter
 
         if search_query:
-            query["$or"] = [
-                {"customer_name": {"$regex": search_query, "$options": "i"}},
-                {"transaction_id": {"$regex": search_query, "$options": "i"}},
-                {"payment_method": {"$regex": search_query, "$options": "i"}},
-                {"description": {"$regex": search_query, "$options": "i"}}
+            query["$and"] = [
+                {"user_id": user["user_id"]},
+                {"$or": [
+                    {"customer_name": {"$regex": search_query, "$options": "i"}},
+                    {"transaction_id": {"$regex": search_query, "$options": "i"}},
+                    {"payment_method": {"$regex": search_query, "$options": "i"}},
+                    {"description": {"$regex": search_query, "$options": "i"}}
+                ]}
             ]
 
         cursor = database[COLLECTION_NAME].find(query).sort("created_at", -1)
@@ -349,15 +357,19 @@ def list_payments():
 @app.route('/api/payments/<payment_id>', methods=['GET'])
 def get_payment(payment_id):
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database service unavailable"}), 503
 
-        query = {"transaction_id": payment_id}
+        query = {"user_id": user["user_id"]}
         try:
-            query = {"$or": [{"_id": ObjectId(payment_id)}, {"transaction_id": payment_id}]}
+            query["$or"] = [{"_id": ObjectId(payment_id)}, {"transaction_id": payment_id}]
         except InvalidId:
-            pass
+            query["transaction_id"] = payment_id
 
         doc = database[COLLECTION_NAME].find_one(query)
         if not doc:
@@ -371,15 +383,19 @@ def get_payment(payment_id):
 @app.route('/api/payments/<payment_id>/refund', methods=['PUT'])
 def refund_payment(payment_id):
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database service unavailable"}), 503
 
-        query = {"transaction_id": payment_id}
+        query = {"user_id": user["user_id"]}
         try:
-            query = {"$or": [{"_id": ObjectId(payment_id)}, {"transaction_id": payment_id}]}
+            query["$or"] = [{"_id": ObjectId(payment_id)}, {"transaction_id": payment_id}]
         except InvalidId:
-            pass
+            query["transaction_id"] = payment_id
 
         doc = database[COLLECTION_NAME].find_one(query)
         if not doc:
@@ -390,13 +406,13 @@ def refund_payment(payment_id):
 
         now = datetime.now(timezone.utc).isoformat()
         database[COLLECTION_NAME].update_one(
-            {"_id": doc["_id"]},
+            {"_id": doc["_id"], "user_id": user["user_id"]},
             {"$set": {"status": "REFUNDED", "refunded_at": now, "updated_at": now}}
         )
 
         doc["status"] = "REFUNDED"
         doc["refunded_at"] = now
-        log_activity("PAYMENT_REFUNDED", f"Refunded ${doc['amount']:.2f} to {doc['customer_name']}", doc['transaction_id'])
+        log_activity("PAYMENT_REFUNDED", f"Refunded ${doc['amount']:.2f} to {doc['customer_name']}", doc['transaction_id'], user_id=user["user_id"])
         return jsonify({"message": "Refund processed successfully", "data": format_doc(doc)}), 200
 
     except Exception as e:
@@ -406,21 +422,25 @@ def refund_payment(payment_id):
 @app.route('/api/payments/<payment_id>', methods=['DELETE'])
 def delete_payment(payment_id):
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database service unavailable"}), 503
 
-        query = {"transaction_id": payment_id}
+        query = {"user_id": user["user_id"]}
         try:
-            query = {"$or": [{"_id": ObjectId(payment_id)}, {"transaction_id": payment_id}]}
+            query["$or"] = [{"_id": ObjectId(payment_id)}, {"transaction_id": payment_id}]
         except InvalidId:
-            pass
+            query["transaction_id"] = payment_id
 
         result = database[COLLECTION_NAME].delete_one(query)
         if result.deleted_count == 0:
             return jsonify({"error": f"Payment '{payment_id}' not found"}), 404
 
-        log_activity("PAYMENT_DELETED", f"Deleted transaction record {payment_id}", payment_id)
+        log_activity("PAYMENT_DELETED", f"Deleted transaction record {payment_id}", payment_id, user_id=user["user_id"])
         return jsonify({"message": f"Payment '{payment_id}' deleted successfully"}), 200
 
     except Exception as e:
@@ -431,18 +451,23 @@ def delete_payment(payment_id):
 @app.route('/api/cards', methods=['GET'])
 def list_cards():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"data": []}), 200
 
-        cursor = database[CARDS_COLLECTION].find().sort("created_at", -1)
+        cursor = database[CARDS_COLLECTION].find({"user_id": user["user_id"]}).sort("created_at", -1)
         cards = [format_doc(doc) for doc in cursor]
         
         if not cards:
             seed_cards = [
                 {
                     "card_id": "CARD-VISA-9041",
-                    "cardholder_name": "ALEXANDER BISHT",
+                    "user_id": user["user_id"],
+                    "cardholder_name": user.get("full_name", "MERCHANT USER").strip().upper(),
                     "brand": "Visa",
                     "last4": "4242",
                     "exp_month": "12",
@@ -453,7 +478,8 @@ def list_cards():
                 },
                 {
                     "card_id": "CARD-MC-5582",
-                    "cardholder_name": "ALEXANDER BISHT",
+                    "user_id": user["user_id"],
+                    "cardholder_name": user.get("full_name", "MERCHANT USER").strip().upper(),
                     "brand": "Mastercard",
                     "last4": "8812",
                     "exp_month": "09",
@@ -464,7 +490,7 @@ def list_cards():
                 }
             ]
             database[CARDS_COLLECTION].insert_many(seed_cards)
-            cursor = database[CARDS_COLLECTION].find().sort("created_at", -1)
+            cursor = database[CARDS_COLLECTION].find({"user_id": user["user_id"]}).sort("created_at", -1)
             cards = [format_doc(doc) for doc in cursor]
 
         return jsonify({"data": cards}), 200
@@ -476,6 +502,10 @@ def list_cards():
 @app.route('/api/cards', methods=['POST'])
 def add_card():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid JSON"}), 400
@@ -504,6 +534,7 @@ def add_card():
         card_id = f"CARD-{uuid.uuid4().hex[:8].upper()}"
         card_doc = {
             "card_id": card_id,
+            "user_id": user["user_id"],
             "cardholder_name": cardholder_name,
             "brand": brand,
             "last4": last4,
@@ -517,7 +548,7 @@ def add_card():
         result = database[CARDS_COLLECTION].insert_one(card_doc)
         card_doc["_id"] = str(result.inserted_id)
 
-        log_activity("CARD_ADDED", f"Saved new {brand} card ending in ****{last4} for {cardholder_name}")
+        log_activity("CARD_ADDED", f"Saved new {brand} card ending in ****{last4} for {cardholder_name}", user_id=user["user_id"])
         return jsonify({"message": "Credit Card added successfully", "data": card_doc}), 201
 
     except Exception as e:
@@ -527,6 +558,10 @@ def add_card():
 @app.route('/api/cards/<card_id>', methods=['PUT'])
 def update_card(card_id):
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid payload"}), 400
@@ -540,8 +575,8 @@ def update_card(card_id):
         if "exp_month" in data: update_fields["exp_month"] = str(data["exp_month"]).zfill(2)
         if "exp_year" in data: update_fields["exp_year"] = str(data["exp_year"])
 
-        database[CARDS_COLLECTION].update_one({"card_id": card_id}, {"$set": update_fields})
-        log_activity("CARD_UPDATED", f"Updated credit card details for {card_id}")
+        database[CARDS_COLLECTION].update_one({"card_id": card_id, "user_id": user["user_id"]}, {"$set": update_fields})
+        log_activity("CARD_UPDATED", f"Updated credit card details for {card_id}", user_id=user["user_id"])
         return jsonify({"message": f"Card '{card_id}' updated successfully"}), 200
 
     except Exception as e:
@@ -551,14 +586,18 @@ def update_card(card_id):
 @app.route('/api/cards/<card_id>/default', methods=['PUT'])
 def set_default_card(card_id):
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database unavailable"}), 503
 
-        database[CARDS_COLLECTION].update_many({}, {"$set": {"is_default": False}})
-        database[CARDS_COLLECTION].update_one({"card_id": card_id}, {"$set": {"is_default": True}})
+        database[CARDS_COLLECTION].update_many({"user_id": user["user_id"]}, {"$set": {"is_default": False}})
+        database[CARDS_COLLECTION].update_one({"card_id": card_id, "user_id": user["user_id"]}, {"$set": {"is_default": True}})
         
-        log_activity("CARD_DEFAULT_CHANGED", f"Set card {card_id} as default payment method")
+        log_activity("CARD_DEFAULT_CHANGED", f"Set card {card_id} as default payment method", user_id=user["user_id"])
         return jsonify({"message": f"Card '{card_id}' is now your default card."}), 200
 
     except Exception as e:
@@ -568,15 +607,19 @@ def set_default_card(card_id):
 @app.route('/api/cards/<card_id>', methods=['DELETE'])
 def delete_card(card_id):
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database service unavailable"}), 503
 
-        result = database[CARDS_COLLECTION].delete_one({"card_id": card_id})
+        result = database[CARDS_COLLECTION].delete_one({"card_id": card_id, "user_id": user["user_id"]})
         if result.deleted_count == 0:
             return jsonify({"error": f"Card '{card_id}' not found"}), 404
 
-        log_activity("CARD_DELETED", f"Removed card {card_id}")
+        log_activity("CARD_DELETED", f"Removed card {card_id}", user_id=user["user_id"])
         return jsonify({"message": f"Card '{card_id}' removed successfully"}), 200
 
     except Exception as e:
@@ -587,19 +630,24 @@ def delete_card(card_id):
 @app.route('/api/profile', methods=['GET'])
 def get_profile():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({"error": "Database unavailable"}), 503
 
-        profile = database[PROFILE_COLLECTION].find_one({})
+        profile = database[PROFILE_COLLECTION].find_one({"user_id": user["user_id"]})
         if not profile:
             profile = {
-                "full_name": "Alexander Bisht",
-                "email": "admin@antipay.io",
+                "user_id": user["user_id"],
+                "full_name": user.get("full_name", "Alexander Bisht"),
+                "email": user.get("email", "admin@antipay.io"),
                 "role": "Chief Technology Officer / Administrator",
-                "organization": "AntiPay Enterprise Corp",
+                "organization": user.get("organization", "AntiPay Enterprise Corp"),
                 "account_status": "Verified Active",
-                "api_key": "sk_live_9f82a10b4c739e1204d",
+                "api_key": f"sk_live_{user['user_id']}_{uuid.uuid4().hex[:12]}",
                 "webhook_url": "https://api.simplepay.io/webhooks/v1",
                 "email_notifications": True,
                 "two_factor_enabled": True,
@@ -619,6 +667,10 @@ def get_profile():
 @app.route('/api/profile', methods=['PUT'])
 def update_profile():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid payload"}), 400
@@ -635,13 +687,13 @@ def update_profile():
         update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
 
         # Update existing profile
-        database[PROFILE_COLLECTION].update_one({}, {"$set": update_fields}, upsert=True)
+        database[PROFILE_COLLECTION].update_one({"user_id": user["user_id"]}, {"$set": update_fields}, upsert=True)
 
-        # Also update cardholder name on default saved card if name changed
+        # Also update cardholder name on default saved cards for this user if name changed
         if "full_name" in data and data["full_name"]:
-            database[CARDS_COLLECTION].update_many({}, {"$set": {"cardholder_name": data["full_name"].strip().upper()}})
+            database[CARDS_COLLECTION].update_many({"user_id": user["user_id"]}, {"$set": {"cardholder_name": data["full_name"].strip().upper()}})
 
-        log_activity("PROFILE_UPDATED", f"Updated profile for {data.get('full_name', 'user')}")
+        log_activity("PROFILE_UPDATED", f"Updated profile for {data.get('full_name', 'user')}", user_id=user["user_id"])
         return jsonify({"message": "Profile updated successfully"}), 200
 
     except Exception as e:
@@ -651,10 +703,14 @@ def update_profile():
 @app.route('/api/activity-logs', methods=['GET'])
 def get_activity_logs():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None: return jsonify({"data": []}), 200
 
-        cursor = database[AUDIT_COLLECTION].find().sort("timestamp", -1).limit(25)
+        cursor = database[AUDIT_COLLECTION].find({"user_id": user["user_id"]}).sort("timestamp", -1).limit(25)
         logs = [format_doc(doc) for doc in cursor]
         return jsonify({"data": logs}), 200
     except Exception as e:
@@ -664,6 +720,10 @@ def get_activity_logs():
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None:
             return jsonify({
@@ -671,8 +731,14 @@ def get_stats():
                 "status_counts": {}, "method_counts": {}
             }), 200
 
-        pipeline_status = [{"$group": {"_id": "$status", "count": {"$sum": 1}, "sum_amount": {"$sum": "$amount"}}}]
-        pipeline_method = [{"$group": {"_id": "$payment_method", "count": {"$sum": 1}, "sum_amount": {"$sum": "$amount"}}}]
+        pipeline_status = [
+            {"$match": {"user_id": user["user_id"]}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}, "sum_amount": {"$sum": "$amount"}}}
+        ]
+        pipeline_method = [
+            {"$match": {"user_id": user["user_id"]}},
+            {"$group": {"_id": "$payment_method", "count": {"$sum": 1}, "sum_amount": {"$sum": "$amount"}}}
+        ]
 
         status_results = list(database[COLLECTION_NAME].aggregate(pipeline_status))
         method_results = list(database[COLLECTION_NAME].aggregate(pipeline_method))
@@ -712,15 +778,20 @@ def get_stats():
 @app.route('/api/seed', methods=['POST'])
 def seed_data():
     try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+
         database = get_db()
         if database is None: return jsonify({"error": "Database service unavailable"}), 503
 
-        if database[COLLECTION_NAME].count_documents({}) > 0:
+        if database[COLLECTION_NAME].count_documents({"user_id": user["user_id"]}) > 0:
             return jsonify({"message": "Database already contains payment records."}), 200
 
         seed_records = [
             {
                 "transaction_id": "TXN-8F92A1B0",
+                "user_id": user["user_id"],
                 "customer_name": "Alice Johnson",
                 "amount": 250.00,
                 "currency": "USD",
@@ -733,6 +804,7 @@ def seed_data():
             },
             {
                 "transaction_id": "TXN-7E41C9D2",
+                "user_id": user["user_id"],
                 "customer_name": "Bob Smith",
                 "amount": 1200.50,
                 "currency": "USD",
@@ -745,6 +817,7 @@ def seed_data():
             },
             {
                 "transaction_id": "TXN-3B10E5F4",
+                "user_id": user["user_id"],
                 "customer_name": "Charlie Davis",
                 "amount": 75.25,
                 "currency": "EUR",
@@ -758,7 +831,7 @@ def seed_data():
         ]
 
         database[COLLECTION_NAME].insert_many(seed_records)
-        log_activity("DATABASE_SEEDED", f"Seeded {len(seed_records)} sample payment records.")
+        log_activity("DATABASE_SEEDED", f"Seeded {len(seed_records)} sample payment records.", user_id=user["user_id"])
         return jsonify({"message": f"Successfully seeded {len(seed_records)} payment records."}), 201
 
     except Exception as e:
