@@ -587,7 +587,7 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Amount</label>
-                      <input id="charge_amount" type="number" step="0.01" className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" defaultValue="150.00" required />
+                      <input id="charge_amount" type="number" step="0.01" className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" defaultValue="0.00" required />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Currency</label>
@@ -823,7 +823,7 @@ function DashboardView({ stats, payments, setCurrentTab, setSelectedReceipt, tri
 
 function SendMoneyView({ profile, onSuccess }) {
   const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('150.00');
+  const [amount, setAmount] = useState('0.00');
   const [currency, setCurrency] = useState('USD');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1313,7 +1313,7 @@ function CardsView({ cards, profile, refreshData }) {
 }
 
 function QrView({ profile, onScanSuccess }) {
-  const [amount, setAmount] = useState('150.00');
+  const [amount, setAmount] = useState('0.00');
   const [currency, setCurrency] = useState('USD');
   const [desc, setDesc] = useState('Merchant Subscription Ref');
   const [activeScannerTab, setActiveScannerTab] = useState('camera'); // camera, upload
@@ -1327,7 +1327,7 @@ function QrView({ profile, onScanSuccess }) {
     user_id: profile.user_id || 'USR-90218',
     merchant_name: merchantName,
     email: merchantEmail,
-    amount: parseFloat(amount) || 150.00,
+    amount: parseFloat(amount) || 0.00,
     currency: currency,
     description: desc,
     created_at: new Date().toISOString()
