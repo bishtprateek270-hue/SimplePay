@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: simplepay-dashboard
+    env: docker
+    dockerfilePath: Dockerfile.prod
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DB_NAME
+        value: payment_db
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: MONGO_URI
+        sync: false # Requires MongoDB Atlas Connection String
