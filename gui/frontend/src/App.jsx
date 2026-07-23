@@ -646,6 +646,7 @@ export default function App() {
                 linkedBanks={linkedBanks}
                 addTransaction={addTransaction}
                 setNotifications={setNotifications}
+                coupons={coupons}
               />
             )}
             
@@ -940,7 +941,8 @@ function DashboardView({
   setWalletBalance,
   linkedBanks,
   addTransaction,
-  setNotifications
+  setNotifications,
+  coupons
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
