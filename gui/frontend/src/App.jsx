@@ -1369,9 +1369,10 @@ function QrView({ profile, onScanSuccess }) {
 
   // Launch camera
   useEffect(() => {
+    let scanner = null;
     if (activeScannerTab === 'camera' && window.Html5QrcodeScanner) {
       try {
-        const scanner = new Html5QrcodeScanner("scanner-viewport", { fps: 10, qrbox: 200 }, false);
+        scanner = new Html5QrcodeScanner("scanner-viewport", { fps: 10, qrbox: 200 }, false);
         scanner.render((decodedText) => {
           let parsedData;
           try {
@@ -1386,12 +1387,18 @@ function QrView({ profile, onScanSuccess }) {
               description: decodedText
             };
           }
-          scanner.clear();
+          // Do not call scanner.clear() inside callback to avoid unmount clear conflicts.
           onScanSuccess(parsedData);
         }, () => {});
-        return () => scanner.clear();
-      } catch(e){}
+      } catch(e){
+        console.error("Scanner initialization error:", e);
+      }
     }
+    return () => {
+      if (scanner) {
+        scanner.clear().catch(err => console.warn("Failed to clear scanner on unmount:", err));
+      }
+    };
   }, [activeScannerTab]);
 
   return (
