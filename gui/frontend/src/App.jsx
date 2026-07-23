@@ -266,15 +266,19 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans transition-colors duration-300 pb-20 md:pb-0 md:pl-64">
+    <div className="min-h-screen bg-background text-foreground font-sans transition-colors duration-300 pb-20 md:pb-0 md:pl-64 relative overflow-hidden">
+      {/* Background Glowing Auroras */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/5 dark:bg-indigo-600/10 blur-[130px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-pink-600/5 dark:bg-pink-600/10 blur-[130px] pointer-events-none z-0" />
+
       {/* Sidebar Navigation - Laptop */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white/70 dark:bg-slate-900/60 border-r border-slate-200/50 dark:border-white/5 backdrop-blur-xl p-6 hidden md:flex flex-col justify-between z-50">
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-card/50 dark:bg-card/40 border-r border-border backdrop-blur-xl p-6 hidden md:flex flex-col justify-between z-50">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Sparkles className="w-4.5 h-4.5" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-600 text-white flex items-center justify-center shadow-lg shadow-glow-primary">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <span className="text-lg font-extrabold tracking-tight">SimplePay</span>
+            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">SimplePay</span>
           </div>
 
           <nav className="space-y-1.5">
@@ -288,14 +292,15 @@ export default function App() {
               { id: 'dev', label: 'API Explorer', icon: FileCode }
             ].map(item => {
               const Icon = item.icon;
+              const isActive = currentTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setCurrentTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                    currentTab === item.id 
-                      ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10' 
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${
+                    isActive 
+                      ? 'bg-gradient-to-tr from-indigo-600 to-pink-600 text-white shadow-lg shadow-glow-primary' 
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-secondary/80 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <Icon className="w-4.5 h-4.5" />
@@ -307,10 +312,10 @@ export default function App() {
         </div>
 
         <div className="space-y-4">
-          <div className="p-4 bg-slate-100/50 dark:bg-slate-800/30 rounded-2xl border border-slate-200/50 dark:border-white/5">
-            <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Database status</div>
+          <div className="p-4 bg-secondary/50 dark:bg-secondary/20 rounded-2xl border border-border">
+            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Database status</div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-glow-success" />
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{dbStatus}</span>
             </div>
           </div>
@@ -318,13 +323,13 @@ export default function App() {
           <div className="flex justify-between items-center">
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:opacity-90 transition-all"
+              className="p-2.5 rounded-xl bg-secondary dark:bg-secondary/35 border border-border hover:opacity-90 hover:scale-105 active:scale-95 transition-all"
             >
               {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-500" />}
             </button>
             <button
               onClick={handleLogout}
-              className="text-xs font-bold text-rose-500 hover:underline"
+              className="text-xs font-extrabold text-rose-500 hover:text-rose-600 hover:underline"
             >
               Log Out
             </button>
@@ -384,7 +389,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setShowChargeModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 text-xs md:text-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-tr from-indigo-600 to-pink-600 hover:opacity-95 text-white font-bold rounded-2xl shadow-lg shadow-glow-primary hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 text-xs md:text-sm"
             >
               <Plus className="w-4 h-4" />
               Process Charge
@@ -663,18 +668,18 @@ function DashboardView({ stats, payments, setCurrentTab, setSelectedReceipt, tri
   return (
     <div className="space-y-8">
       {/* Balance Card Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[32px] p-6 md:p-8 text-white shadow-xl shadow-blue-500/10 relative overflow-hidden">
+      <div className="bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 rounded-[32px] p-6 md:p-8 text-white shadow-xl shadow-glow-primary relative overflow-hidden">
         <div className="absolute top-[-30%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-[80px] pointer-events-none" />
         
         <div className="flex justify-between items-center mb-6">
-          <div className="text-xs uppercase font-extrabold tracking-widest text-blue-100">SimplePay Merchant Balance</div>
-          <span className="px-2.5 py-1 bg-white/20 rounded-full text-[10px] font-extrabold tracking-wide uppercase">Live Mode</span>
+          <div className="text-[10px] uppercase font-bold tracking-widest text-indigo-100">SimplePay Merchant Balance</div>
+          <span className="px-2.5 py-1 bg-white/20 rounded-full text-[9px] font-bold tracking-wider uppercase">Live Mode</span>
         </div>
 
-        <div className="text-3xl md:text-4xl font-extrabold mb-1">
+        <div className="text-3xl md:text-4xl font-extrabold mb-2 font-sans tracking-tight">
           {formatCurrency(stats?.total_volume || 0)}
         </div>
-        <p className="text-xs text-blue-200 font-medium">
+        <p className="text-xs text-indigo-100 font-medium">
           Authorizations rate: <strong className="text-white">{stats?.success_rate || 0}%</strong> across <strong className="text-white">{stats?.total_transactions || 0}</strong> transactions
         </p>
 
@@ -1311,8 +1316,21 @@ function QrView({ profile, onScanSuccess }) {
       try {
         const scanner = new Html5QrcodeScanner("scanner-viewport", { fps: 10, qrbox: 200 }, false);
         scanner.render((decodedText) => {
+          let parsedData;
+          try {
+            parsedData = JSON.parse(decodedText);
+          } catch (e) {
+            parsedData = {
+              app: "SimplePay",
+              type: "PAYMENT_REQUEST",
+              merchant_name: "Scanned QR",
+              amount: 0.00,
+              currency: "USD",
+              description: decodedText
+            };
+          }
           scanner.clear();
-          onScanSuccess(JSON.parse(decodedText));
+          onScanSuccess(parsedData);
         }, () => {});
         return () => scanner.clear();
       } catch(e){}
