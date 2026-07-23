@@ -20,28 +20,3 @@ graph TD
     GUI -->|Port 5000| API[⚡ Flask Backend API]
     API -->|Port 27017| DB[(🛢️ MongoDB)]
 ```
-
----
-
-## 🚀 Getting Started (Local Run)
-
-To run the complete application stack locally on your machine, ensure you have Docker installed and run:
-
-```bash
-docker compose up -d --build
-```
-
-### Access Ports:
-* **GUI Dashboard**: 👉 [http://localhost:8501](http://localhost:8501)
-* **Backend REST API**: 👉 [http://localhost:5000/health](http://localhost:5000/health)
-
----
-
-## 📮 Key API Endpoints (Port 5000)
-
-* `GET /health` - Service health status
-* `GET /api/stats` - Payment analytics and statistics
-* `GET /api/payments` - Retrieve transaction list
-* `POST /api/payments` - Process a new payment transaction
-* `GET /api/cards` - List saved credit cards
-* `GET /api/profile` - Retrieve merchant profile details
