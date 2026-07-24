@@ -64,69 +64,7 @@ export default function App() {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutCooldown, setLockoutCooldown] = useState(0);
 
-  // Stripe Integration States
-  const [stripe, setStripe] = useState(null);
-  const [stripeKey, setStripeKey] = useState('');
-  const [stripeCardElement, setStripeCardElement] = useState(null);
 
-  // Fetch publishable key & initialize Stripe client
-  useEffect(() => {
-    const initStripe = async () => {
-      try {
-        const res = await fetch('/api/proxy/stripe-key');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.publishable_key) {
-            setStripeKey(data.publishable_key);
-            if (window.Stripe) {
-              const stripeInstance = window.Stripe(data.publishable_key);
-              setStripe(stripeInstance);
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Failed to initialize Stripe client:", err);
-      }
-    };
-    initStripe();
-  }, []);
-
-  // Handle Stripe Card Element mounting/unmounting dynamically
-  useEffect(() => {
-    if (showChargeModal && stripe) {
-      const timer = setTimeout(() => {
-        const el = document.getElementById('card-element');
-        if (el && !stripeCardElement) {
-          const elements = stripe.elements();
-          const card = elements.create('card', {
-            style: {
-              base: {
-                color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#0f172a',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                fontSmoothing: 'antialiased',
-                fontSize: '14px',
-                '::placeholder': {
-                  color: '#94a3b8'
-                }
-              },
-              invalid: {
-                color: '#ef4444',
-                iconColor: '#ef4444'
-              }
-            }
-          });
-          card.mount('#card-element');
-          setStripeCardElement(card);
-        }
-      }, 150);
-      return () => clearTimeout(timer);
-    } else if (!showChargeModal && stripeCardElement) {
-      try {
-        stripeCardElement.destroy();
-      } catch (e) {}
-      setStripeCardElement(null);
-    }
-  }, [showChargeModal, stripe]);
 
   // Lockout countdown timer
   useEffect(() => {
@@ -215,6 +153,70 @@ export default function App() {
   // Modals
   const [showChargeModal, setShowChargeModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+
+  // Stripe Integration States
+  const [stripe, setStripe] = useState(null);
+  const [stripeKey, setStripeKey] = useState('');
+  const [stripeCardElement, setStripeCardElement] = useState(null);
+
+  // Fetch publishable key & initialize Stripe client
+  useEffect(() => {
+    const initStripe = async () => {
+      try {
+        const res = await fetch('/api/proxy/stripe-key');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.publishable_key) {
+            setStripeKey(data.publishable_key);
+            if (window.Stripe) {
+              const stripeInstance = window.Stripe(data.publishable_key);
+              setStripe(stripeInstance);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to initialize Stripe client:", err);
+      }
+    };
+    initStripe();
+  }, []);
+
+  // Handle Stripe Card Element mounting/unmounting dynamically
+  useEffect(() => {
+    if (showChargeModal && stripe) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('card-element');
+        if (el && !stripeCardElement) {
+          const elements = stripe.elements();
+          const card = elements.create('card', {
+            style: {
+              base: {
+                color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#0f172a',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '14px',
+                '::placeholder': {
+                  color: '#94a3b8'
+                }
+              },
+              invalid: {
+                color: '#ef4444',
+                iconColor: '#ef4444'
+              }
+            }
+          });
+          card.mount('#card-element');
+          setStripeCardElement(card);
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    } else if (!showChargeModal && stripeCardElement) {
+      try {
+        stripeCardElement.destroy();
+      } catch (e) {}
+      setStripeCardElement(null);
+    }
+  }, [showChargeModal, stripe]);
 
   // Theme Toggler
   const toggleTheme = () => {
