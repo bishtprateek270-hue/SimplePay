@@ -173,6 +173,10 @@ export default function App() {
       
       // Fetch Stats
       const resStats = await fetch('/api/proxy/stats', { headers });
+      if (resStats.status === 401) {
+        handleLogout();
+        return;
+      }
       if (resStats.ok) setStats(await resStats.json());
 
       // Fetch Payments
