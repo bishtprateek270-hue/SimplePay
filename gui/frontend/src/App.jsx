@@ -504,10 +504,25 @@ export default function App() {
           { id: 'dashboard', label: 'Wallet', icon: Wallet },
           { id: 'send', label: 'Send', icon: Send },
           { id: 'bills', label: 'Bills', icon: Building },
+          { id: 'qr', label: 'Scan', icon: QrCode, isScannerButton: true },
           { id: 'history', label: 'History', icon: History },
           { id: 'cards', label: 'Cards', icon: CreditCardIcon },
           { id: 'profile', label: 'Profile', icon: User }
         ].map(item => {
+          if (item.isScannerButton) {
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentTab(item.id)}
+                className="flex flex-col items-center gap-1 text-[10px] font-bold relative -top-4 shrink-0"
+              >
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 to-pink-600 text-white flex items-center justify-center shadow-lg shadow-glow-primary hover:scale-105 active:scale-95 transition-all">
+                  <QrCode className="w-5.5 h-5.5" />
+                </div>
+                <span className="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 mt-0.5">{item.label}</span>
+              </button>
+            );
+          }
           const Icon = item.icon;
           const isActive = currentTab === item.id;
           return (
@@ -2693,34 +2708,91 @@ function QrView({ profile, onScanSuccess }) {
 
   // Launch camera
   useEffect(() => {
-    let scanner = null;
-    if (activeScannerTab === 'camera' && window.Html5QrcodeScanner) {
+    let html5QrCode = null;
+    let isMounted = true;
+
+    if (activeScannerTab === 'camera' && window.Html5Qrcode) {
       try {
-        scanner = new Html5QrcodeScanner("scanner-viewport", { fps: 10, qrbox: 200 }, false);
-        scanner.render((decodedText) => {
-          let parsedData;
-          try {
-            parsedData = JSON.parse(decodedText);
-          } catch (e) {
-            parsedData = {
-              app: "SimplePay",
-              type: "PAYMENT_REQUEST",
-              merchant_name: "Scanned QR",
-              amount: 0.00,
-              currency: "USD",
-              description: decodedText
-            };
+        html5QrCode = new Html5Qrcode("scanner-viewport");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 15,
+            qrbox: (width, height) => {
+              const min = Math.min(width, height);
+              return { width: Math.floor(min * 0.7), height: Math.floor(min * 0.7) };
+            }
+          },
+          (decodedText) => {
+            let parsedData;
+            try {
+              parsedData = JSON.parse(decodedText);
+            } catch (e) {
+              parsedData = {
+                app: "SimplePay",
+                type: "PAYMENT_REQUEST",
+                merchant_name: "Scanned QR",
+                amount: 0.00,
+                currency: "USD",
+                description: decodedText
+              };
+            }
+            if (isMounted) {
+              onScanSuccess(parsedData);
+            }
+          },
+          (errorMessage) => {
+            // Ignore scan failure logs
           }
-          // Do not call scanner.clear() inside callback to avoid unmount clear conflicts.
-          onScanSuccess(parsedData);
-        }, () => {});
-      } catch(e){
-        console.error("Scanner initialization error:", e);
+        ).catch(err => {
+          console.warn("Environmental camera start failed, trying default camera...", err);
+          if (isMounted) {
+            html5QrCode.start(
+              {},
+              {
+                fps: 15,
+                qrbox: (width, height) => {
+                  const min = Math.min(width, height);
+                  return { width: Math.floor(min * 0.7), height: Math.floor(min * 0.7) };
+                }
+              },
+              (decodedText) => {
+                let parsedData;
+                try {
+                  parsedData = JSON.parse(decodedText);
+                } catch (e) {
+                  parsedData = {
+                    app: "SimplePay",
+                    type: "PAYMENT_REQUEST",
+                    merchant_name: "Scanned QR",
+                    amount: 0.00,
+                    currency: "USD",
+                    description: decodedText
+                  };
+                }
+                if (isMounted) {
+                  onScanSuccess(parsedData);
+                }
+              },
+              () => {}
+            ).catch(err2 => {
+              console.error("Default camera startup failed:", err2);
+            });
+          }
+        });
+      } catch (e) {
+        console.error("Scanner setup failed:", e);
       }
     }
+
     return () => {
-      if (scanner) {
-        scanner.clear().catch(err => console.warn("Failed to clear scanner on unmount:", err));
+      isMounted = false;
+      if (html5QrCode) {
+        try {
+          if (html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.warn("Failed to stop scanner on unmount:", err));
+          }
+        } catch (e) {}
       }
     };
   }, [activeScannerTab]);
@@ -2774,11 +2846,26 @@ function QrView({ profile, onScanSuccess }) {
           <button onClick={()=>setActiveScannerTab('upload')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeScannerTab === 'upload' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}>Upload File</button>
         </div>
 
-        <div className="aspect-video w-full rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-slate-200/20 relative overflow-hidden">
+        <div className="aspect-square max-h-[360px] w-full rounded-[24px] bg-slate-950 flex flex-col items-center justify-center border border-slate-200/20 relative overflow-hidden">
           {activeScannerTab === 'camera' ? (
-            <div id="scanner-viewport" className="w-full h-full" />
+            <div className="relative w-full h-full">
+              <div id="scanner-viewport" className="w-full h-full" />
+              {/* Premium scanner guidelines overlay */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="w-[180px] h-[180px] border border-white/10 rounded-2xl relative shadow-[0_0_0_9999px_rgba(15,23,42,0.65)]">
+                  {/* Glowing corners */}
+                  <div className="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-pink-500 -mt-1 -ml-1 rounded-tl-md" />
+                  <div className="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-pink-500 -mt-1 -mr-1 rounded-tr-md" />
+                  <div className="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-pink-500 -mb-1 -ml-1 rounded-bl-md" />
+                  <div className="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-pink-500 -mb-1 -mr-1 rounded-br-md" />
+                  
+                  {/* Pulsing scanner laser line */}
+                  <div className="absolute left-2 right-2 h-[3px] bg-gradient-to-r from-transparent via-pink-500 to-transparent shadow-[0_0_10px_rgba(236,72,153,0.85)] scanner-laser" />
+                </div>
+              </div>
+            </div>
           ) : (
-            <div id="scanner-viewport" className="text-center p-6 space-y-4">
+            <div className="text-center p-6 space-y-4">
               <Upload className="w-8 h-8 text-blue-500 mx-auto" />
               <div className="text-xs font-bold text-slate-400">Upload and scan invoice image</div>
               <input type="file" accept="image/*" className="hidden" id="file-qr" onChange={handleUploadScan} />

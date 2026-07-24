@@ -104,3 +104,26 @@
 .shadow-glow-success {
   box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
 }
+
+/* Custom scanner video sizing & laser animation */
+#scanner-viewport video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 1.5rem;
+}
+
+@keyframes scan-laser {
+  0%, 100% {
+    top: 10%;
+    opacity: 0.3;
+  }
+  50% {
+    top: 90%;
+    opacity: 0.95;
+  }
+}
+
+.scanner-laser {
+  animation: scan-laser 2.5s infinite linear;
+}
