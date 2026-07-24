@@ -171,6 +171,22 @@ def proxy_seed():
     data, code = call_backend('/api/seed', method='POST')
     return jsonify(data), code
 
+# Stripe Integration Proxies
+@app.route('/api/proxy/stripe-key', methods=['GET'])
+def proxy_stripe_key():
+    data, code = call_backend('/api/stripe-key', method='GET')
+    return jsonify(data), code
+
+@app.route('/api/proxy/payments/create-intent', methods=['POST'])
+def proxy_create_intent():
+    data, code = call_backend('/api/payments/create-intent', method='POST', json_data=request.get_json())
+    return jsonify(data), code
+
+@app.route('/api/proxy/payments/confirm', methods=['POST'])
+def proxy_confirm_payment():
+    data, code = call_backend('/api/payments/confirm', method='POST', json_data=request.get_json())
+    return jsonify(data), code
+
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 8501))
     app.run(host='0.0.0.0', port=port, debug=False)

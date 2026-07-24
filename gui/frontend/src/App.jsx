@@ -64,6 +64,70 @@ export default function App() {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutCooldown, setLockoutCooldown] = useState(0);
 
+  // Stripe Integration States
+  const [stripe, setStripe] = useState(null);
+  const [stripeKey, setStripeKey] = useState('');
+  const [stripeCardElement, setStripeCardElement] = useState(null);
+
+  // Fetch publishable key & initialize Stripe client
+  useEffect(() => {
+    const initStripe = async () => {
+      try {
+        const res = await fetch('/api/proxy/stripe-key');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.publishable_key) {
+            setStripeKey(data.publishable_key);
+            if (window.Stripe) {
+              const stripeInstance = window.Stripe(data.publishable_key);
+              setStripe(stripeInstance);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to initialize Stripe client:", err);
+      }
+    };
+    initStripe();
+  }, []);
+
+  // Handle Stripe Card Element mounting/unmounting dynamically
+  useEffect(() => {
+    if (showChargeModal && stripe) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('card-element');
+        if (el && !stripeCardElement) {
+          const elements = stripe.elements();
+          const card = elements.create('card', {
+            style: {
+              base: {
+                color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#0f172a',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '14px',
+                '::placeholder': {
+                  color: '#94a3b8'
+                }
+              },
+              invalid: {
+                color: '#ef4444',
+                iconColor: '#ef4444'
+              }
+            }
+          });
+          card.mount('#card-element');
+          setStripeCardElement(card);
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    } else if (!showChargeModal && stripeCardElement) {
+      try {
+        stripeCardElement.destroy();
+      } catch (e) {}
+      setStripeCardElement(null);
+    }
+  }, [showChargeModal, stripe]);
+
   // Lockout countdown timer
   useEffect(() => {
     if (lockoutCooldown > 0) {
@@ -770,39 +834,131 @@ export default function App() {
               className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border border-slate-200/50 dark:border-white/5 shadow-2xl"
             >
               <div className="p-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center">
-                <h3 className="font-extrabold text-base tracking-tight">Process Instant Charge</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-base tracking-tight">Process Instant Charge</h3>
+                  {stripe ? (
+                    <span className="text-[9px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Stripe Live</span>
+                  ) : (
+                    <span className="text-[9px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Stripe Mock Mode</span>
+                  )}
+                </div>
                 <button onClick={() => setShowChargeModal(false)} className="text-slate-400 hover:text-slate-600 font-semibold text-lg">&times;</button>
               </div>
 
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
-                const payload = {
-                  customer_name: document.getElementById('charge_customer').value,
-                  amount: parseFloat(document.getElementById('charge_amount').value),
-                  currency: document.getElementById('charge_currency').value,
-                  payment_method: document.getElementById('charge_method').value,
-                  description: document.getElementById('charge_desc').value
-                };
+                const customerName = document.getElementById('charge_customer').value;
+                const amount = parseFloat(document.getElementById('charge_amount').value);
+                const currency = document.getElementById('charge_currency').value;
+                const description = document.getElementById('charge_desc').value;
+
                 try {
-                  const res = await fetch('/api/proxy/payments', {
+                  const resIntent = await fetch('/api/proxy/payments/create-intent', {
                     method: 'POST',
                     headers: { 
                       'Content-Type': 'application/json',
                       'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                      customer_name: customerName,
+                      amount: amount,
+                      currency: currency,
+                      description: description
+                    })
                   });
-                  if (res.ok) {
-                    alert('✅ Payment authorized and processed successfully!');
-                    setShowChargeModal(false);
-                    refreshData();
+
+                  if (!resIntent.ok) {
+                    const errorData = await resIntent.json();
+                    throw new Error(errorData.error || "Failed to initiate payment transaction");
+                  }
+
+                  const intentData = await resIntent.json();
+                  const { client_secret, transaction_id, mock } = intentData;
+
+                  if (mock) {
+                    // Simulate Stripe payment validation progress
+                    await new Promise(r => setTimeout(r, 1200));
+
+                    const resConfirm = await fetch('/api/proxy/payments/confirm', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        transaction_id: transaction_id,
+                        status: 'SUCCESS',
+                        card_last4: '4242',
+                        brand: 'Visa'
+                      })
+                    });
+
+                    if (resConfirm.ok) {
+                      alert('✅ Charge processed successfully (Mock Stripe)!');
+                      setShowChargeModal(false);
+                      refreshData();
+                    } else {
+                      throw new Error("Stripe mock confirmation failed");
+                    }
                   } else {
-                    const data = await res.json();
-                    alert(`❌ Charge failed: ${data.error}`);
+                    if (!stripe || !stripeCardElement) {
+                      throw new Error("Stripe components failed to initialize properly");
+                    }
+
+                    const result = await stripe.confirmCardPayment(client_secret, {
+                      payment_method: {
+                        card: stripeCardElement,
+                        billing_details: {
+                          name: customerName
+                        }
+                      }
+                    });
+
+                    if (result.error) {
+                      await fetch('/api/proxy/payments/confirm', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                          transaction_id: transaction_id,
+                          status: 'FAILED'
+                        })
+                      });
+                      throw new Error(result.error.message);
+                    } else {
+                      if (result.paymentIntent.status === 'succeeded') {
+                        const last4 = result.paymentIntent.payment_method_details?.card?.last4 || '4242';
+                        const brand = result.paymentIntent.payment_method_details?.card?.brand || 'Visa';
+
+                        const resConfirm = await fetch('/api/proxy/payments/confirm', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify({
+                            transaction_id: transaction_id,
+                            status: 'SUCCESS',
+                            card_last4: last4,
+                            brand: brand
+                          })
+                        });
+
+                        if (resConfirm.ok) {
+                          alert('✅ Payment authorized and processed successfully via Stripe!');
+                          setShowChargeModal(false);
+                          refreshData();
+                        } else {
+                          throw new Error("Payment succeeded but server transaction log failed");
+                        }
+                      }
+                    }
                   }
                 } catch(err) {
-                  alert(err.message);
+                  alert(`❌ Charge failed: ${err.message}`);
                 } finally {
                   setLoading(false);
                 }
@@ -830,13 +986,10 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Payment Method</label>
-                    <select id="charge_method" className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
-                      <option value="Credit Card">Credit Card</option>
-                      <option value="Apple Pay">Apple Pay</option>
-                      <option value="Google Pay">Google Pay</option>
-                      <option value="PayPal">PayPal</option>
-                    </select>
+                    <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Credit Card Details (PCI Secure Input)</label>
+                    <div className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none">
+                      <div id="card-element"></div>
+                    </div>
                   </div>
 
                   <div>

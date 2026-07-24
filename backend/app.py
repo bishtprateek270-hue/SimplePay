@@ -2,12 +2,23 @@ import os
 import uuid
 import logging
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+import bcrypt
+import jwt
+import stripe
+
+# JWT & Stripe config
+JWT_SECRET = os.getenv("JWT_SECRET", "super_secret_jwt_key_999")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_mock_keys_123456789")
+
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -42,9 +53,29 @@ def get_db():
         logger.warning(f"MongoDB connection failed: {e}")
         return None
 
+def generate_jwt(user_id):
+    """Generate signed JWT token."""
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "iat": datetime.now(timezone.utc)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
 def hash_password(password):
-    """Simple SHA256 password hash for secure MongoDB storage."""
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    """Secure Bcrypt password hashing."""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def verify_password(password, stored_hash):
+    """Verify password against Bcrypt salt, falling back to legacy SHA256."""
+    if stored_hash.startswith("$2b$") or stored_hash.startswith("$2a$"):
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8'))
+        except Exception:
+            return False
+    # Fallback to legacy SHA256
+    return hashlib.sha256(password.encode('utf-8')).hexdigest() == stored_hash
 
 def log_activity(action, details, txn_id=None, user_id=None):
     database = get_db()
@@ -73,10 +104,16 @@ def get_authenticated_user(req):
     token = auth_header.replace("Bearer ", "").strip()
     if not token:
         return None
-    database = get_db()
-    if database is None:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        database = get_db()
+        if database is None:
+            return None
+        return database[USERS_COLLECTION].find_one({"user_id": user_id})
+    except Exception as e:
+        logger.warning(f"JWT Decode failed: {e}")
         return None
-    return database[USERS_COLLECTION].find_one({"auth_token": token})
 
 # --- Root & Health Endpoints ---
 @app.route('/', methods=['GET'])
@@ -156,7 +193,7 @@ def register():
             return jsonify({"error": "An account with this email address already exists"}), 400
 
         user_id = f"USR-{uuid.uuid4().hex[:8].upper()}"
-        auth_token = f"token_{uuid.uuid4().hex}"
+        auth_token = generate_jwt(user_id)
         password_hash = hash_password(password)
         now = datetime.now(timezone.utc).isoformat()
 
@@ -218,13 +255,12 @@ def login():
         if database is None:
             return jsonify({"error": "Database unavailable"}), 503
 
-        hashed = hash_password(password)
-        user = database[USERS_COLLECTION].find_one({"email": email, "password_hash": hashed})
+        user = database[USERS_COLLECTION].find_one({"email": email})
 
-        if not user:
+        if not user or not verify_password(password, user.get("password_hash", "")):
             return jsonify({"error": "Invalid email or password"}), 401
 
-        auth_token = f"token_{uuid.uuid4().hex}"
+        auth_token = generate_jwt(user["user_id"])
         database[USERS_COLLECTION].update_one({"_id": user["_id"]}, {"$set": {"auth_token": auth_token, "last_login": datetime.now(timezone.utc).isoformat()}})
         user["auth_token"] = auth_token
 
@@ -836,6 +872,143 @@ def seed_data():
 
     except Exception as e:
         return jsonify({"error": "Seeding failed", "details": str(e)}), 500
+
+# --- Stripe Integration Routes ---
+@app.route('/stripe-key', methods=['GET'])
+@app.route('/api/stripe-key', methods=['GET'])
+def get_stripe_key():
+    return jsonify({"publishable_key": STRIPE_PUBLISHABLE_KEY}), 200
+
+@app.route('/payments/create-intent', methods=['POST'])
+@app.route('/api/payments/create-intent', methods=['POST'])
+def create_payment_intent():
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid payload"}), 400
+            
+        customer_name = data.get("customer_name")
+        amount = data.get("amount")
+        currency = data.get("currency", "USD").upper()
+        description = data.get("description", "Payment transaction")
+        
+        if not customer_name or not amount:
+            return jsonify({"error": "Missing customer_name or amount"}), 400
+            
+        try:
+            amount = float(amount)
+            if amount <= 0:
+                return jsonify({"error": "amount must be greater than zero"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "amount must be a valid number"}), 400
+            
+        database = get_db()
+        if database is None:
+            return jsonify({"error": "Database unavailable"}), 503
+            
+        transaction_id = f"TXN-{uuid.uuid4().hex[:8].upper()}"
+        now = datetime.now(timezone.utc).isoformat()
+        
+        client_secret = ""
+        is_mock = True
+        
+        if STRIPE_SECRET_KEY:
+            try:
+                cents = int(round(amount * 100))
+                intent = stripe.PaymentIntent.create(
+                    amount=cents,
+                    currency=currency.lower(),
+                    description=description,
+                    metadata={
+                        "transaction_id": transaction_id,
+                        "user_id": user["user_id"],
+                        "customer_name": customer_name
+                    }
+                )
+                client_secret = intent.client_secret
+                is_mock = False
+            except Exception as e:
+                logger.error(f"Stripe error: {e}")
+                return jsonify({"error": "Failed to initiate Stripe PaymentIntent", "details": str(e)}), 500
+        else:
+            # Mock fallback secret
+            client_secret = f"pi_mock_{uuid.uuid4().hex}_secret_{uuid.uuid4().hex[:8]}"
+            
+        payment_doc = {
+            "transaction_id": transaction_id,
+            "user_id": user["user_id"],
+            "customer_name": customer_name.strip(),
+            "amount": round(amount, 2),
+            "currency": currency,
+            "payment_method": "Credit Card (Stripe)" if not is_mock else "Credit Card (Mock Stripe)",
+            "card_last4": "4242",
+            "description": description,
+            "status": "PENDING",
+            "stripe_payment_intent": client_secret.split("_secret_")[0] if client_secret else "",
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        database[COLLECTION_NAME].insert_one(payment_doc)
+        log_activity("PAYMENT_INTENT_CREATED", f"Initiated payment of {currency} {amount} for {customer_name}", transaction_id, user_id=user["user_id"])
+        
+        return jsonify({
+            "client_secret": client_secret,
+            "transaction_id": transaction_id,
+            "mock": is_mock
+        }), 201
+        
+    except Exception as e:
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+@app.route('/payments/confirm', methods=['POST'])
+@app.route('/api/payments/confirm', methods=['POST'])
+def confirm_payment():
+    try:
+        user = get_authenticated_user(request)
+        if not user:
+            return jsonify({"error": "Unauthenticated"}), 401
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid payload"}), 400
+            
+        transaction_id = data.get("transaction_id")
+        status = data.get("status", "SUCCESS").upper()
+        card_last4 = data.get("card_last4", "4242")
+        brand = data.get("brand", "Visa")
+        
+        if not transaction_id:
+            return jsonify({"error": "Missing transaction_id"}), 400
+            
+        database = get_db()
+        if database is None:
+            return jsonify({"error": "Database unavailable"}), 503
+            
+        payment = database[COLLECTION_NAME].find_one({"transaction_id": transaction_id, "user_id": user["user_id"]})
+        if not payment:
+            return jsonify({"error": "Transaction not found"}), 404
+            
+        now = datetime.now(timezone.utc).isoformat()
+        database[COLLECTION_NAME].update_one(
+            {"transaction_id": transaction_id},
+            {"$set": {
+                "status": status,
+                "card_last4": card_last4,
+                "payment_method": f"{brand} (Stripe)" if "Stripe" in payment.get("payment_method", "") else payment.get("payment_method"),
+                "updated_at": now
+            }}
+        )
+        
+        log_activity("PAYMENT_CONFIRMED", f"Payment intent confirmed as {status} for {transaction_id}", transaction_id, user_id=user["user_id"])
+        return jsonify({"message": "Transaction updated successfully"}), 200
+        
+    except Exception as e:
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 5000))
