@@ -638,7 +638,10 @@ export default function App() {
                 setSelectedReceipt={setSelectedReceipt}
                 triggerSeed={async () => {
                   setLoading(true);
-                  await fetch('/api/proxy/seed', { method: 'POST' });
+                  await fetch('/api/proxy/seed', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
                   await refreshData();
                 }}
                 walletBalance={walletBalance}
@@ -652,6 +655,7 @@ export default function App() {
             
             {currentTab === 'send' && (
               <SendMoneyView
+                token={token}
                 profile={profile}
                 onSuccess={() => {
                   setCurrentTab('dashboard');
@@ -681,6 +685,7 @@ export default function App() {
 
             {currentTab === 'history' && (
               <HistoryView
+                token={token}
                 payments={payments}
                 setSelectedReceipt={setSelectedReceipt}
                 refreshData={refreshData}
@@ -689,6 +694,7 @@ export default function App() {
 
             {currentTab === 'cards' && (
               <CardsView
+                token={token}
                 cards={cards}
                 profile={profile}
                 refreshData={refreshData}
@@ -715,6 +721,7 @@ export default function App() {
 
             {currentTab === 'profile' && (
               <ProfileView
+                token={token}
                 profile={profile}
                 refreshData={refreshData}
                 securitySettings={securitySettings}
@@ -727,7 +734,7 @@ export default function App() {
             )}
 
             {currentTab === 'dev' && (
-              <DevView />
+              <DevView token={token} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -761,7 +768,10 @@ export default function App() {
                 try {
                   const res = await fetch('/api/proxy/payments', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(payload)
                   });
                   if (res.ok) {
@@ -895,7 +905,10 @@ export default function App() {
                     onClick={async () => {
                       if (!confirm('Issue refund?')) return;
                       try {
-                        const res = await fetch(`/api/proxy/payments/${selectedReceipt.transaction_id}/refund`, { method: 'PUT' });
+                        const res = await fetch(`/api/proxy/payments/${selectedReceipt.transaction_id}/refund`, {
+                          method: 'PUT',
+                          headers: { 'Authorization': `Bearer ${token}` }
+                        });
                         if (res.ok) {
                           alert('Refund issued');
                           setSelectedReceipt(null);
@@ -1383,6 +1396,7 @@ function DashboardView({
 }
 
 function SendMoneyView({ 
+  token,
   profile, 
   onSuccess,
   favorites,
@@ -1432,7 +1446,10 @@ function SendMoneyView({
       // Create transaction via backend API
       const res = await fetch('/api/proxy/payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
       
@@ -1768,7 +1785,7 @@ function SendMoneyView({
   );
 }
 
-function HistoryView({ payments, setSelectedReceipt, refreshData }) {
+function HistoryView({ token, payments, setSelectedReceipt, refreshData }) {
   const [filter, setFilter] = useState('ALL'); // ALL, SUCCESS, FAILED, REFUNDED
   const [search, setSearch] = useState('');
 
@@ -1852,7 +1869,10 @@ function HistoryView({ payments, setSelectedReceipt, refreshData }) {
                     onClick={async (e) => {
                       e.stopPropagation();
                       if (!confirm('Refund this record?')) return;
-                      await fetch(`/api/proxy/payments/${item.transaction_id}/refund`, { method: 'PUT' });
+                      await fetch(`/api/proxy/payments/${item.transaction_id}/refund`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
                       refreshData();
                     }}
                     className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 transition-all"
@@ -1865,7 +1885,10 @@ function HistoryView({ payments, setSelectedReceipt, refreshData }) {
                   onClick={async (e) => {
                     e.stopPropagation();
                     if (!confirm('Delete record permanently?')) return;
-                    await fetch(`/api/proxy/payments/${item.transaction_id}`, { method: 'DELETE' });
+                    await fetch(`/api/proxy/payments/${item.transaction_id}`, {
+                      method: 'DELETE',
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    });
                     refreshData();
                   }}
                   className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-rose-500 hover:bg-rose-500/10 transition-all"
@@ -1889,6 +1912,7 @@ function HistoryView({ payments, setSelectedReceipt, refreshData }) {
 }
 
 function CardsView({ 
+  token,
   cards, 
   profile, 
   refreshData,
@@ -1931,7 +1955,10 @@ function CardsView({
     try {
       const res = await fetch('/api/proxy/cards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           cardholder_name: cardHolder,
           card_number: cardNum,
@@ -2047,7 +2074,10 @@ function CardsView({
                     ) : (
                       <button
                         onClick={async () => {
-                          await fetch(`/api/proxy/cards/${c.card_id}/default`, { method: 'PUT' });
+                          await fetch(`/api/proxy/cards/${c.card_id}/default`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          });
                           refreshData();
                         }}
                         className="text-[9px] font-extrabold text-blue-500 hover:underline"
@@ -2058,7 +2088,10 @@ function CardsView({
                     <button
                       onClick={async () => {
                         if (!confirm('Remove card?')) return;
-                        await fetch(`/api/proxy/cards/${c.card_id}`, { method: 'DELETE' });
+                        await fetch(`/api/proxy/cards/${c.card_id}`, {
+                          method: 'DELETE',
+                          headers: { 'Authorization': `Bearer ${token}` }
+                        });
                         refreshData();
                       }}
                       className="text-rose-500 p-0.5 hover:bg-rose-500/10 rounded"
@@ -2755,6 +2788,7 @@ function QrView({ profile, onScanSuccess }) {
 }
 
 function ProfileView({ 
+  token,
   profile, 
   refreshData,
   securitySettings,
@@ -2784,7 +2818,10 @@ function ProfileView({
     try {
       const res = await fetch('/api/proxy/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           full_name: name,
           email: email,
@@ -2953,7 +2990,7 @@ function ProfileView({
   );
 }
 
-function DevView() {
+function DevView({ token }) {
   const [curlOutput, setCurlOutput] = useState('curl -X GET http://payment-service:5000/health');
   const [jsonOutput, setJsonOutput] = useState('Click an endpoint trigger to view response...');
 
@@ -2962,7 +2999,10 @@ function DevView() {
     setJsonOutput('Triggering REST API connection...');
     try {
       const proxyPath = `/api/proxy${endpoint.replace('/api', '')}`;
-      const res = await fetch(proxyPath, { method });
+      const res = await fetch(proxyPath, {
+        method,
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await res.json();
       setJsonOutput(JSON.stringify(data, null, 2));
     } catch(err) {
