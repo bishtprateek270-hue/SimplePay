@@ -1654,6 +1654,7 @@ function SendMoneyView({
 }) {
   const [mode, setMode] = useState('send'); // send, request
   const [recipient, setRecipient] = useState('');
+  const [useMobile, setUseMobile] = useState(false);
   const [amount, setAmount] = useState('0.00');
   const [currency, setCurrency] = useState('USD');
   const [note, setNote] = useState('');
@@ -1666,29 +1667,27 @@ function SendMoneyView({
 
   const handleSend = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    // Validate amount
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) return;
-    
-    // Check wallet balance
-    if (amt > walletBalance) {
-      alert("Insufficient wallet balance.");
+    if (isNaN(amt) || amt <= 0) {
+      alert('Please enter a valid amount greater than 0');
+      setLoading(false);
       return;
     }
-    
-    setLoading(true);
-    try {
-      const payload = {
-        customer_name: recipient,
-        amount: amt,
-        currency: currency,
-        payment_method: 'Wallet Transfer',
-        description: note || 'Direct Wallet Transfer'
-      };
 
-      // Create transaction via backend API
+    // Build payload based on whether mobile number is used
+    const payload = {
+      amount: amt,
+      currency,
+      ...(useMobile ? { mobile_number: recipient } : { customer_name: recipient })
+    };
+
+    try {
       const res = await fetch('/api/proxy/payments', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -1704,7 +1703,7 @@ function SendMoneyView({
           ...prev
         ]);
         
-        alert(`✅ Succeeded! Sent ${formatCurrency(payload.amount, payload.currency)} to ${payload.customer_name}`);
+        alert(`✅ Succeeded! Sent ${formatCurrency(payload.amount, payload.currency)} to ${payload.customer_name ?? payload.mobile_number}`);
         onSuccess();
       } else {
         const d = await res.json();
@@ -1891,8 +1890,7 @@ function SendMoneyView({
               })}
             </div>
           </div>
-
-          {/* Transaction input form */}
+        {/* Transaction input form */}
           <form onSubmit={mode === 'send' ? handleSend : handleRequest} className="space-y-4">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
@@ -1901,11 +1899,15 @@ function SendMoneyView({
               <input
                 type="text"
                 className="w-full bg-slate-100 dark:bg-slate-800/40 border border-slate-200/50 dark:border-white/5 rounded-full px-5 py-3 text-xs focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 transition-all text-foreground"
-                placeholder="Enter name, email or select contact"
+                placeholder="Enter name, email or mobile number"
                 value={recipient}
                 onChange={e => setRecipient(e.target.value)}
                 required
               />
+              <div className="flex items-center mt-2">
+                <input type="checkbox" checked={useMobile} onChange={e => setUseMobile(e.target.checked)} className="w-4 h-4 mr-2" />
+                <span className="text-xs text-slate-500">Send to Mobile Number</span>
+              </div>
             </div>
 
             {/* Dynamic Amount Input Widget */}
@@ -3218,6 +3220,7 @@ function ProfileView({
   const [email, setEmail] = useState(profile.email || '');
   const [org, setOrg] = useState(profile.organization || '');
   const [webhook, setWebhook] = useState(profile.webhook_url || '');
+  const [mobile, setMobile] = useState(profile.mobile_number || '');
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -3232,7 +3235,8 @@ function ProfileView({
           full_name: name,
           email: email,
           organization: org,
-          webhook_url: webhook
+          webhook_url: webhook,
+          mobile_number: mobile
         })
       });
       if (res.ok) {
@@ -3268,6 +3272,12 @@ function ProfileView({
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Webhook Target</label>
             <input type="url" className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 text-foreground" value={webhook} onChange={e=>setWebhook(e.target.value)} />
+          </div>
+
+          {/* Mobile Number Field */}
+          <div className="mt-4">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Mobile Number</label>
+            <input type="text" value={mobile} onChange={e => setMobile(e.target.value)} placeholder="e.g. 9876543210" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm focus:outline-none" />
           </div>
 
           <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg mt-6 active:scale-95 transition-all">Save Profile Changes</button>
