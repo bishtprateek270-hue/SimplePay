@@ -2249,7 +2249,7 @@ function CardsView({
       };
     } else if (brand === 'AMEX' || brand === 'AMERICAN EXPRESS') {
       return {
-        bg: 'bg-gradient-to-tr from-slate-400 via-slate-200 to-slate-350 dark:from-slate-755 dark:via-slate-800 dark:to-slate-655 border-slate-300/40',
+        bg: 'bg-gradient-to-tr from-slate-400 via-slate-200 to-slate-350 dark:from-slate-700 dark:via-slate-800 dark:to-slate-600 border-slate-300/40',
         brandLogo: (
           <div className="bg-[#0070D1] border border-white/20 rounded px-1.5 py-0.5 text-[8px] font-black tracking-tighter text-white uppercase text-center leading-none select-none">
             AMEX
@@ -2260,7 +2260,7 @@ function CardsView({
       };
     } else {
       return {
-        bg: 'bg-gradient-to-tr from-rose-950 via-neutral-900 to-neutral-900 border-rose-955/30',
+        bg: 'bg-gradient-to-tr from-rose-950 via-neutral-900 to-neutral-900 border-rose-950/30',
         brandLogo: (
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">SimplePay</span>
         ),

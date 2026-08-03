@@ -1,7 +1,11 @@
 import os
 import logging
 import requests
+import mimetypes
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('text/css', '.css')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
