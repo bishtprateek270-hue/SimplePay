@@ -174,9 +174,13 @@ export default function App() {
   const [appSettings, setAppSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('simplepay_app_settings');
-      return saved && saved !== 'undefined' ? JSON.parse(saved) : { language: 'English', pushEnabled: true, emailAlerts: true, currency: getCurrencyForLocale() };
+      if (saved && saved !== 'undefined') {
+        const parsed = JSON.parse(saved);
+        if (parsed.currency) return parsed;
+      }
+      return { language: 'English', pushEnabled: true, emailAlerts: true, currency: 'INR' };
     } catch (e) {
-      return { language: 'English', pushEnabled: true, emailAlerts: true, currency: getCurrencyForLocale() };
+      return { language: 'English', pushEnabled: true, emailAlerts: true, currency: 'INR' };
     }
   });
   const [showNotifications, setShowNotifications] = useState(false);
@@ -953,6 +957,7 @@ export default function App() {
                 setWalletBalance={setWalletBalance}
                 addTransaction={addTransaction}
                 setNotifications={setNotifications}
+                appSettings={appSettings}
               />
             )}
 
@@ -1054,11 +1059,11 @@ export default function App() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Currency</label>
-                      <select id="charge_currency" className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                      <select id="charge_currency" defaultValue={appSettings?.currency || 'INR'} key={appSettings?.currency || 'INR'} className="w-full bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="INR">INR (₹)</option>
                         <option value="USD">USD ($)</option>
                         <option value="EUR">EUR (€)</option>
                         <option value="GBP">GBP (£)</option>
-                        <option value="INR">INR (₹)</option>
                       </select>
                     </div>
                   </div>
@@ -1789,15 +1794,22 @@ function SendMoneyView({
   walletBalance,
   setWalletBalance,
   addTransaction,
-  setNotifications
+  setNotifications,
+  appSettings
 }) {
   const [mode, setMode] = useState('send'); // send, request
   const [recipient, setRecipient] = useState('');
   const [useMobile, setUseMobile] = useState(false);
   const [amount, setAmount] = useState('0.00');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState(appSettings?.currency || 'INR');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (appSettings?.currency) {
+      setCurrency(appSettings.currency);
+    }
+  }, [appSettings?.currency]);
   
   // Beneficiary form state
   const [showAddBeneficiary, setShowAddBeneficiary] = useState(false);
@@ -2109,10 +2121,10 @@ function SendMoneyView({
                   value={currency}
                   onChange={e => setCurrency(e.target.value)}
                 >
+                  <option value="INR">INR (₹)</option>
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
                   <option value="GBP">GBP (£)</option>
-                  <option value="INR">INR (₹)</option>
                 </select>
                 <input
                   type="number"
@@ -3665,8 +3677,19 @@ function ProfileView({
   const [name, setName] = useState(profile.full_name || '');
   const [email, setEmail] = useState(profile.email || '');
   const [org, setOrg] = useState(profile.organization || '');
-
   const [mobile, setMobile] = useState(profile.mobile_number || localStorage.getItem('simplepay_mobile_number') || '');
+  const [selectedCurrency, setSelectedCurrency] = useState(profile.currency || appSettings.currency || 'INR');
+
+  const handleCurrencyChange = (newCurr) => {
+    setSelectedCurrency(newCurr);
+    setAppSettings(prev => ({ ...prev, currency: newCurr }));
+    try {
+      const saved = localStorage.getItem('simplepay_app_settings');
+      const parsed = saved ? JSON.parse(saved) : {};
+      parsed.currency = newCurr;
+      localStorage.setItem('simplepay_app_settings', JSON.stringify(parsed));
+    } catch (e) {}
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -3681,11 +3704,13 @@ function ProfileView({
           full_name: name,
           email: email,
           organization: org,
-          mobile_number: mobile
+          mobile_number: mobile,
+          currency: selectedCurrency
         })
       });
       if (res.ok) {
         alert('✅ Profile details updated!');
+        setAppSettings(prev => ({ ...prev, currency: selectedCurrency }));
         refreshData();
         localStorage.setItem('simplepay_mobile_number', mobile);
       }
@@ -3715,14 +3740,20 @@ function ProfileView({
             <input type="text" className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 text-foreground" value={org} onChange={e=>setOrg(e.target.value)} required />
           </div>
 
-          <div>
-
-          </div>
-
-          {/* Mobile Number Field */}
-          <div className="mt-4">
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Mobile Number</label>
-            <input type="text" value={mobile} onChange={e => setMobile(e.target.value)} placeholder="e.g. 9876543210" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm focus:outline-none" />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Mobile Number</label>
+              <input type="text" value={mobile} onChange={e => setMobile(e.target.value)} placeholder="e.g. 9876543210" className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 text-foreground" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Default Account Currency</label>
+              <select value={selectedCurrency} onChange={e => handleCurrencyChange(e.target.value)} className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 text-foreground">
+                <option value="INR">INR (₹ Indian Rupee)</option>
+                <option value="USD">USD ($ US Dollar)</option>
+                <option value="EUR">EUR (€ Euro)</option>
+                <option value="GBP">GBP (£ British Pound)</option>
+              </select>
+            </div>
           </div>
 
           <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg mt-6 active:scale-95 transition-all">Save Profile Changes</button>
@@ -3792,14 +3823,14 @@ function ProfileView({
                     <p className="text-[10px] text-slate-400 mt-0.5">Preferred currency for amounts</p>
                   </div>
                   <select
-                    value={appSettings.currency}
-                    onChange={e => setAppSettings(prev => ({ ...prev, currency: e.target.value }))}
+                    value={selectedCurrency}
+                    onChange={e => handleCurrencyChange(e.target.value)}
                     className="bg-card border border-border rounded-xl px-3 py-2 text-xs focus:outline-none w-full text-foreground"
                   >
+                    <option value="INR">INR (₹)</option>
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
-                    <option value="INR">INR (₹)</option>
                   </select>
                 </div>
             </div>

@@ -718,7 +718,7 @@ def update_profile():
             return jsonify({"error": "Database unavailable"}), 503
 
         update_fields = {}
-        for key in ["full_name", "email", "organization", "webhook_url", "email_notifications", "two_factor_enabled"]:
+        for key in ["full_name", "email", "organization", "webhook_url", "email_notifications", "two_factor_enabled", "currency", "mobile_number"]:
             if key in data:
                 update_fields[key] = data[key]
 
