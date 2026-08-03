@@ -98,13 +98,13 @@ export default function App() {
     try {
       const saved = localStorage.getItem('simplepay_linked_banks');
       return saved && saved !== 'undefined' ? JSON.parse(saved) : [
-        { id: 'bank-1', name: 'Chase Bank', type: 'Checking', number: '•••• 8904', routing: '121000248' },
-        { id: 'bank-2', name: 'Wells Fargo', type: 'Savings', number: '•••• 1120', routing: '121000248' }
+        { id: 'bank-1', name: 'State Bank of India (SBI)', type: 'Savings', number: '•••• 8904', routing: 'SBIN0001234' },
+        { id: 'bank-2', name: 'HDFC Bank', type: 'Current', number: '•••• 1120', routing: 'HDFC0000240' }
       ];
     } catch (e) {
       return [
-        { id: 'bank-1', name: 'Chase Bank', type: 'Checking', number: '•••• 8904', routing: '121000248' },
-        { id: 'bank-2', name: 'Wells Fargo', type: 'Savings', number: '•••• 1120', routing: '121000248' }
+        { id: 'bank-1', name: 'State Bank of India (SBI)', type: 'Savings', number: '•••• 8904', routing: 'SBIN0001234' },
+        { id: 'bank-2', name: 'HDFC Bank', type: 'Current', number: '•••• 1120', routing: 'HDFC0000240' }
       ];
     }
   });
@@ -2179,7 +2179,7 @@ function CardsView({
   const [liveBrand, setLiveBrand] = useState('MASTERCARD');
 
   // Bank Form State
-  const [bankName, setBankName] = useState('Chase Bank');
+  const [bankName, setBankName] = useState('State Bank of India (SBI)');
   const [accType, setAccType] = useState('Checking');
   const [routingNum, setRoutingNum] = useState('');
   const [accNum, setAccNum] = useState('');
@@ -2615,11 +2615,26 @@ function CardsView({
                         value={bankName}
                         onChange={e => setBankName(e.target.value)}
                       >
-                        <option value="Chase Bank">Chase Bank</option>
-                        <option value="Wells Fargo">Wells Fargo</option>
-                        <option value="Bank of America">Bank of America</option>
-                        <option value="Citi Bank">Citi Bank</option>
-                        <option value="Capital One">Capital One</option>
+                        <optgroup label="Popular Indian Banks">
+                          <option value="State Bank of India (SBI)">State Bank of India (SBI)</option>
+                          <option value="HDFC Bank">HDFC Bank</option>
+                          <option value="ICICI Bank">ICICI Bank</option>
+                          <option value="Punjab National Bank (PNB)">Punjab National Bank (PNB)</option>
+                          <option value="Axis Bank">Axis Bank</option>
+                          <option value="Bank of Baroda">Bank of Baroda</option>
+                          <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                          <option value="Canara Bank">Canara Bank</option>
+                          <option value="Union Bank of India">Union Bank of India</option>
+                          <option value="IndusInd Bank">IndusInd Bank</option>
+                          <option value="YES Bank">YES Bank</option>
+                        </optgroup>
+                        <optgroup label="International / US Banks">
+                          <option value="Chase Bank">Chase Bank</option>
+                          <option value="Wells Fargo">Wells Fargo</option>
+                          <option value="Bank of America">Bank of America</option>
+                          <option value="Citi Bank">Citi Bank</option>
+                          <option value="Capital One">Capital One</option>
+                        </optgroup>
                       </select>
                     </div>
                     <div>
@@ -2629,20 +2644,21 @@ function CardsView({
                         value={accType}
                         onChange={e => setAccType(e.target.value)}
                       >
-                        <option value="Checking">Checking</option>
-                        <option value="Savings">Savings</option>
+                        <option value="Savings">Savings Account</option>
+                        <option value="Current">Current Account</option>
+                        <option value="Checking">Checking Account</option>
+                        <option value="Salary">Salary Account</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Routing Number (9 Digits)</label>
+                    <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Routing Number / IFSC Code</label>
                     <input
                       type="text"
-                      className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500"
-                      placeholder="121000248"
-                      maxLength={9}
-                      minLength={9}
+                      className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 uppercase"
+                      placeholder="e.g. SBIN0001234 or 121000248"
+                      maxLength={11}
                       value={routingNum}
                       onChange={e => setRoutingNum(e.target.value)}
                       required
