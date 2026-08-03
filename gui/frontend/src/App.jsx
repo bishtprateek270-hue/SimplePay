@@ -1860,7 +1860,8 @@ function SendMoneyView({
     const payload = {
       amount: amt,
       currency,
-      ...(useMobile ? { mobile_number: recipient } : { customer_name: recipient })
+      customer_name: useMobile ? `Mobile (${recipient})` : recipient,
+      ...(useMobile ? { mobile_number: recipient } : {})
     };
 
     try {

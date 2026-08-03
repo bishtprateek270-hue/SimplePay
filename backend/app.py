@@ -298,15 +298,16 @@ def create_payment():
         if not data:
             return jsonify({"error": "Invalid JSON payload"}), 400
 
-        customer_name = data.get("customer_name")
+        mobile_number = str(data.get("mobile_number", "")).strip()
+        customer_name = data.get("customer_name") or (f"Mobile ({mobile_number})" if mobile_number else None)
         amount = data.get("amount")
         currency = data.get("currency", "USD").upper()
-        payment_method = data.get("payment_method", "Credit Card")
-        description = data.get("description", "Payment transaction")
+        payment_method = data.get("payment_method", "Mobile Wallet" if mobile_number else "Credit Card")
+        description = data.get("description", f"Transfer to {mobile_number}" if mobile_number else "Payment transaction")
         card_last4 = data.get("card_last4", "4242")
 
         if not customer_name or not isinstance(customer_name, str) or len(customer_name.strip()) == 0:
-            return jsonify({"error": "Missing or invalid 'customer_name'"}), 400
+            return jsonify({"error": "Missing or invalid 'customer_name' or 'mobile_number'"}), 400
 
         try:
             amount = float(amount)
@@ -330,6 +331,7 @@ def create_payment():
             "transaction_id": transaction_id,
             "user_id": user["user_id"],
             "customer_name": customer_name.strip(),
+            "mobile_number": mobile_number,
             "amount": round(amount, 2),
             "currency": currency,
             "payment_method": payment_method,
