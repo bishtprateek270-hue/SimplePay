@@ -3398,12 +3398,31 @@ function ProfileView({
 
 // Utility: format currency
 function formatCurrency(amount, currency) {
-  const cur = currency || appSettings.currency || 'USD';
+  const cur = currency || (() => {
+    try {
+      const saved = localStorage.getItem('simplepay_app_settings');
+      const settings = saved ? JSON.parse(saved) : {};
+      return settings.currency || getCurrencyForLocale();
+    } catch (e) {
+      return getCurrencyForLocale();
+    }
+  })();
+
   const formatter = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: cur,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
   return formatter.format(parseFloat(amount || 0));
 }
+
+
+
+
+
+
+
+
+
