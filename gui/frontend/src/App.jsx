@@ -1662,44 +1662,62 @@ function SendMoneyView({
   
   // Beneficiary form state
   const [showAddBeneficiary, setShowAddBeneficiary] = useState(false);
-  // OTP state for transaction verification
+  // 4-Digit OTP state for transaction security
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [resendNotice, setResendNotice] = useState('');
   const [newBName, setNewBName] = useState('');
   const [newBEmail, setNewBEmail] = useState('');
 
-  const handleSend = async (e) => {
-    e.preventDefault();
+  const generateNewOtpCode = () => {
+    // Generate a fresh, random 4-digit code (1000 - 9999) every time
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(code);
+    setEnteredOtp('');
+    setOtpError('');
+    return code;
+  };
 
-    // If OTP step not started, generate a 4‑digit OTP and ask user to enter it
-    if (!otpStep) {
-      const generated = Math.floor(1000 + Math.random() * 9000).toString();
-      setGeneratedOtp(generated);
-      setOtpStep(true);
-      // In a real app, OTP would be sent via SMS/email. For demo, we alert it.
-      alert(`Your OTP is ${generated}`);
-      setLoading(false);
+  const handleSendSubmit = (e) => {
+    e.preventDefault();
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt <= 0) {
+      alert('Please enter a valid amount greater than 0');
+      return;
+    }
+    if (!recipient) {
+      alert('Please enter a valid recipient');
+      return;
+    }
+    if (amt > walletBalance) {
+      alert('Insufficient wallet balance to perform this transfer');
       return;
     }
 
-    // Verify entered OTP before proceeding
-    if (otp !== generatedOtp) {
-      alert('Incorrect OTP. Please try again.');
+    // Generate a unique 4-digit OTP code on every transaction attempt
+    const newCode = generateNewOtpCode();
+    setResendNotice(`📱 SMS Security Alert: Your SimplePay 4-digit OTP is ${newCode}`);
+    setShowOtpModal(true);
+  };
+
+  const handleResendOtp = () => {
+    const newCode = generateNewOtpCode();
+    setResendNotice(`📱 New SMS Security Code: ${newCode}`);
+  };
+
+  const handleVerifyAndPay = async (e) => {
+    e.preventDefault();
+    if (enteredOtp.trim() !== generatedOtp) {
+      setOtpError('❌ Incorrect OTP. Please enter the 4-digit code shown above.');
       return;
     }
 
     setLoading(true);
-
-    // Validate amount
+    setOtpError('');
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0) {
-      alert('Please enter a valid amount greater than 0');
-      setLoading(false);
-      return;
-    }
 
-    // Build payload based on whether mobile number is used
     const payload = {
       amount: amt,
       currency,
@@ -1718,25 +1736,31 @@ function SendMoneyView({
 
       if (res.ok) {
         setWalletBalance(prev => prev - amt);
-
-        // Notify
+        addTransaction({
+          id: 'tx-' + Date.now(),
+          type: 'send',
+          recipient,
+          amount: amt,
+          currency,
+          date: 'Just now',
+          status: 'SUCCESS'
+        });
         setNotifications(prev => [
           { id: Date.now(), title: 'Money Sent 💸', msg: `Successfully sent ${formatCurrency(amt, currency)} to ${recipient}.`, time: 'Just now', read: false },
           ...prev
         ]);
-
         alert(`✅ Succeeded! Sent ${formatCurrency(payload.amount, payload.currency)} to ${payload.customer_name ?? payload.mobile_number}`);
+        setShowOtpModal(false);
+        setRecipient('');
+        setAmount('0.00');
+        setNote('');
         onSuccess();
-        // Reset OTP state after successful transaction
-        setOtpStep(false);
-        setGeneratedOtp('');
-        setOtp('');
       } else {
         const d = await res.json();
-        alert(`❌ Transfer failed: ${d.error}`);
+        setOtpError(`❌ Transfer failed: ${d.error || 'Server error'}`);
       }
     } catch (err) {
-      alert(err.message);
+      setOtpError(`❌ Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -1917,7 +1941,7 @@ function SendMoneyView({
             </div>
           </div>
         {/* Transaction input form */}
-          <form onSubmit={mode === 'send' ? handleSend : handleRequest} className="space-y-4">
+          <form onSubmit={mode === 'send' ? handleSendSubmit : handleRequest} className="space-y-4">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                 {mode === 'send' ? 'Recipient Name or Email' : 'Request From Name or Email'}
@@ -1975,20 +1999,6 @@ function SendMoneyView({
                 value={note}
                 onChange={e => setNote(e.target.value)}
               />
-              {otpStep && (
-                <div className="mt-4">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Enter OTP</label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    className="w-full bg-slate-100 dark:bg-slate-800/40 border border-slate-200/50 dark:border-white/5 rounded-full px-5 py-3 text-xs focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 transition-all text-foreground"
-                    placeholder="4‑digit OTP"
-                    value={otp}
-                    onChange={e => setOtp(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end pt-2">
@@ -2067,6 +2077,110 @@ function SendMoneyView({
           </div>
         </div>
       </div>
+
+      {/* 4-Digit Security OTP Modal Verification */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border border-slate-200/50 dark:border-white/10 shadow-2xl p-6 sm:p-8 space-y-6 relative"
+            >
+              {/* Header */}
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-white shadow-lg shadow-blue-500/20">
+                  <Shield className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Security OTP Verification</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  A unique 4-digit security OTP code is required to authorize this money transfer.
+                </p>
+              </div>
+
+              {/* Simulated SMS Alert Banner */}
+              <div className="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center gap-3">
+                <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 animate-bounce" />
+                <div className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                  {resendNotice}
+                </div>
+              </div>
+
+              {/* Summary details */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/50 dark:border-white/5 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Transfer Amount:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                    {formatCurrency(parseFloat(amount), currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Recipient:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{recipient}</span>
+                </div>
+              </div>
+
+              {/* Form Input */}
+              <form onSubmit={handleVerifyAndPay} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
+                    Enter 4-Digit Security OTP
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    autoFocus
+                    className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-center text-2xl font-black tracking-[0.8em] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-all font-mono"
+                    placeholder="••••"
+                    value={enteredOtp}
+                    onChange={e => setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    required
+                  />
+                </div>
+
+                {otpError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs text-center font-semibold">
+                    {otpError}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-slate-400">Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                  >
+                    Resend New OTP 🔄
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOtpModal(false);
+                      setEnteredOtp('');
+                      setOtpError('');
+                    }}
+                    className="py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || enteredOtp.length !== 4}
+                    className="py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Verify & Send 🚀'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
