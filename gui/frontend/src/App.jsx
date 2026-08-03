@@ -1277,17 +1277,16 @@ function DashboardView({
         {/* Left Side: Balance cards + KPI Cards Row */}
         <div className="lg:col-span-5 space-y-6">
           
-          {/* Card 2: Digital Wallet Balance (Restyled to Deep Blue Gradient Hero Visa Card) */}
-          <div className="bg-gradient-hero rounded-[24px] p-6 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px] border border-blue-500/30">
+          {/* Card: Digital Wallet Balance (Restyled to Premium Black Mastercard Hero Card) */}
+          <div className="bg-gradient-to-tr from-neutral-950 via-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-[24px] p-6 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
             {/* Iridescent gloss glare */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08] pointer-events-none" />
-            <div className="absolute top-0 right-0 bottom-0 left-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none" />
             
             <div>
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-blue-200">Available Wallet Balance</div>
-                  <div className="text-2xl font-black font-mono tracking-tight mt-1">
+                  <div className="text-[9px] uppercase font-bold tracking-widest text-neutral-400">Available Wallet Balance</div>
+                  <div className="text-2xl font-black font-mono tracking-tight mt-1 text-white">
                     {formatCurrency(walletBalance)}
                   </div>
                 </div>
@@ -1299,47 +1298,48 @@ function DashboardView({
                     <div className="absolute inset-y-0 left-1/3 right-1/3 border-x border-slate-900/30" />
                     <div className="absolute inset-x-0 top-1/3 bottom-1/3 border-y border-slate-900/30" />
                   </div>
-                  <svg className="w-3.5 h-3.5 text-white opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <svg className="w-3.5 h-3.5 text-neutral-400 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M2 8a7.5 7.5 0 0 1 0 8M6 5.5a11 11 0 0 1 0 13M10 3a14.5 14.5 0 0 1 0 18" />
                   </svg>
                 </div>
               </div>
               
               {/* Masked Card Number representing virtual card */}
-              <div className="text-sm font-mono tracking-widest text-blue-100 my-2 select-none">
-                •••• •••• •••• 9988
+              <div className="text-sm font-mono tracking-widest text-neutral-400 my-2 select-none">
+                •••• •••• •••• 8812
               </div>
               
-              <p className="text-[10px] text-blue-200 font-medium">
+              <p className="text-[10px] text-neutral-400 font-medium">
                 Linked Funding: <strong className="text-white">{linkedBanks.length} Active Bank Accounts</strong>
               </p>
             </div>
 
-            {/* Bottom: Cardholder / Visa Logo / Add/Withdraw actions */}
-            <div className="flex justify-between items-end border-t border-white/10 pt-4 mt-2">
+            {/* Bottom: Cardholder / Mastercard Logo / Add/Withdraw actions */}
+            <div className="flex justify-between items-end border-t border-neutral-700/50 pt-4 mt-2">
               <div>
-                <span className="text-[7px] uppercase tracking-wider text-blue-200 block font-bold">Card Holder</span>
-                <span className="text-[11px] uppercase font-extrabold tracking-wide">{profile?.full_name || 'Alexander Bisht'}</span>
+                <span className="text-[7px] uppercase tracking-wider text-neutral-400 block font-bold">Card Holder</span>
+                <span className="text-[11px] uppercase font-extrabold tracking-wide text-white">{profile?.full_name || 'Alexander Bisht'}</span>
               </div>
               
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white font-bold rounded-full text-[10px] flex items-center justify-center gap-1 active:scale-95 transition-all border border-white/10"
+                  className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full text-[10px] flex items-center justify-center gap-1 active:scale-95 transition-all border border-white/10"
                 >
                   <Plus className="w-2.5 h-2.5" /> Add
                 </button>
                 <button
                   onClick={() => setShowWithdrawModal(true)}
-                  className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white font-bold rounded-full text-[10px] flex items-center justify-center gap-1 active:scale-95 transition-all border border-white/10"
+                  className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full text-[10px] flex items-center justify-center gap-1 active:scale-95 transition-all border border-white/10"
                 >
                   <Minus className="w-2.5 h-2.5" /> Cashout
                 </button>
                 
-                {/* Visa brand logo */}
-                <span className="text-sm font-black italic tracking-tighter text-white select-none pl-1 border-l border-white/10">
-                  <span className="text-blue-300">V</span>ISA
-                </span>
+                {/* Mastercard brand logo */}
+                <div className="flex items-center -space-x-1.5 select-none pl-1 border-l border-neutral-700/50">
+                  <div className="w-4 h-4 rounded-full bg-[#EB001B] opacity-90 shadow-sm" />
+                  <div className="w-4 h-4 rounded-full bg-[#F79E1B] opacity-90 shadow-sm" />
+                </div>
               </div>
             </div>
           </div>
@@ -2175,8 +2175,8 @@ function CardsView({
   const [expYear, setExpYear] = useState('2028');
   const [cvv, setCvv] = useState('');
 
-  const [liveNum, setLiveNum] = useState('•••• •••• •••• 4242');
-  const [liveBrand, setLiveBrand] = useState('VISA');
+  const [liveNum, setLiveNum] = useState('•••• •••• •••• 8812');
+  const [liveBrand, setLiveBrand] = useState('MASTERCARD');
 
   // Bank Form State
   const [bankName, setBankName] = useState('Chase Bank');
