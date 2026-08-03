@@ -3219,8 +3219,8 @@ function ProfileView({
   const [name, setName] = useState(profile.full_name || '');
   const [email, setEmail] = useState(profile.email || '');
   const [org, setOrg] = useState(profile.organization || '');
-  const [webhook, setWebhook] = useState(profile.webhook_url || '');
-  const [mobile, setMobile] = useState(profile.mobile_number || '');
+
+  const [mobile, setMobile] = useState(profile.mobile_number || localStorage.getItem('simplepay_mobile_number') || '');
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -3235,13 +3235,13 @@ function ProfileView({
           full_name: name,
           email: email,
           organization: org,
-          webhook_url: webhook,
           mobile_number: mobile
         })
       });
       if (res.ok) {
         alert('✅ Profile details updated!');
         refreshData();
+        localStorage.setItem('simplepay_mobile_number', mobile);
       }
     } catch(err){}
   };
@@ -3270,8 +3270,7 @@ function ProfileView({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Webhook Target</label>
-            <input type="url" className="w-full bg-secondary/50 dark:bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-indigo-500 text-foreground" value={webhook} onChange={e=>setWebhook(e.target.value)} />
+
           </div>
 
           {/* Mobile Number Field */}
