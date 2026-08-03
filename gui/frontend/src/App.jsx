@@ -1662,10 +1662,86 @@ function SendMoneyView({
   
   // Beneficiary form state
   const [showAddBeneficiary, setShowAddBeneficiary] = useState(false);
+  // OTP state for transaction verification
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpStep, setOtpStep] = useState(false);
   const [newBName, setNewBName] = useState('');
   const [newBEmail, setNewBEmail] = useState('');
 
   const handleSend = async (e) => {
+    e.preventDefault();
+
+    // If OTP step not started, generate a 4‑digit OTP and ask user to enter it
+    if (!otpStep) {
+      const generated = Math.floor(1000 + Math.random() * 9000).toString();
+      setGeneratedOtp(generated);
+      setOtpStep(true);
+      // In a real app, OTP would be sent via SMS/email. For demo, we alert it.
+      alert(`Your OTP is ${generated}`);
+      setLoading(false);
+      return;
+    }
+
+    // Verify entered OTP before proceeding
+    if (otp !== generatedOtp) {
+      alert('Incorrect OTP. Please try again.');
+      return;
+    }
+
+    setLoading(true);
+
+    // Validate amount
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt <= 0) {
+      alert('Please enter a valid amount greater than 0');
+      setLoading(false);
+      return;
+    }
+
+    // Build payload based on whether mobile number is used
+    const payload = {
+      amount: amt,
+      currency,
+      ...(useMobile ? { mobile_number: recipient } : { customer_name: recipient })
+    };
+
+    try {
+      const res = await fetch('/api/proxy/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setWalletBalance(prev => prev - amt);
+
+        // Notify
+        setNotifications(prev => [
+          { id: Date.now(), title: 'Money Sent 💸', msg: `Successfully sent ${formatCurrency(amt, currency)} to ${recipient}.`, time: 'Just now', read: false },
+          ...prev
+        ]);
+
+        alert(`✅ Succeeded! Sent ${formatCurrency(payload.amount, payload.currency)} to ${payload.customer_name ?? payload.mobile_number}`);
+        onSuccess();
+        // Reset OTP state after successful transaction
+        setOtpStep(false);
+        setGeneratedOtp('');
+        setOtp('');
+      } else {
+        const d = await res.json();
+        alert(`❌ Transfer failed: ${d.error}`);
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
     e.preventDefault();
     setLoading(true);
 
@@ -1949,6 +2025,20 @@ function SendMoneyView({
                 value={note}
                 onChange={e => setNote(e.target.value)}
               />
+              {otpStep && (
+                <div className="mt-4">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Enter OTP</label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    className="w-full bg-slate-100 dark:bg-slate-800/40 border border-slate-200/50 dark:border-white/5 rounded-full px-5 py-3 text-xs focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 transition-all text-foreground"
+                    placeholder="4‑digit OTP"
+                    value={otp}
+                    onChange={e => setOtp(e.target.value)}
+                    required
+                  />
+                </div>
+              )
             </div>
 
             <div className="flex justify-end pt-2">
