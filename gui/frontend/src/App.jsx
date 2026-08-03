@@ -36,6 +36,7 @@ import {
   TrendingUp,
   Star
 } from 'lucide-react';
+import { getCurrencyForLocale } from './utils/localeCurrency';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard'); // dashboard, send, history, cards, qr, profile
@@ -173,9 +174,9 @@ export default function App() {
   const [appSettings, setAppSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('simplepay_app_settings');
-      return saved && saved !== 'undefined' ? JSON.parse(saved) : { language: 'English', pushEnabled: true, emailAlerts: true };
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : { language: 'English', pushEnabled: true, emailAlerts: true, currency: getCurrencyForLocale() };
     } catch (e) {
-      return { language: 'English', pushEnabled: true, emailAlerts: true };
+      return { language: 'English', pushEnabled: true, emailAlerts: true, currency: getCurrencyForLocale() };
     }
   });
   const [showNotifications, setShowNotifications] = useState(false);
@@ -3328,6 +3329,24 @@ function ProfileView({
                 <option value="French">French (FR)</option>
                 <option value="Hindi">Hindi (IN)</option>
               </select>
+
+                {/* Currency Selector */}
+                <div className="grid grid-cols-2 gap-4 items-center bg-secondary/30 p-4 rounded-2xl border border-border mt-4">
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Display Currency</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Preferred currency for amounts</p>
+                  </div>
+                  <select
+                    value={appSettings.currency}
+                    onChange={e => setAppSettings(prev => ({ ...prev, currency: e.target.value }))}
+                    className="bg-card border border-border rounded-xl px-3 py-2 text-xs focus:outline-none w-full text-foreground"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
             </div>
 
             <div className="flex justify-between items-center bg-secondary/30 p-4 rounded-2xl border border-border">
@@ -3378,7 +3397,13 @@ function ProfileView({
 
 
 // Utility: format currency
-function formatCurrency(amount, currency = 'USD') {
-  const sym = currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'INR' ? '₹' : '$';
-  return `${sym}${parseFloat(amount || 0).toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function formatCurrency(amount, currency) {
+  const cur = currency || appSettings.currency || 'USD';
+  const formatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: cur,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return formatter.format(parseFloat(amount || 0));
 }
