@@ -2103,6 +2103,112 @@ function CardsView({
   const [routingNum, setRoutingNum] = useState('');
   const [accNum, setAccNum] = useState('');
 
+  const getCardStyle = (brandName) => {
+    const brand = (brandName || '').toUpperCase();
+    if (brand === 'VISA') {
+      return {
+        bg: 'bg-gradient-to-tr from-blue-900 via-blue-700 to-indigo-900 border-blue-500/30',
+        brandLogo: (
+          <span className="text-base font-black italic tracking-tighter text-white select-none">
+            <span className="text-blue-300">V</span>ISA
+          </span>
+        ),
+        textColor: 'text-white',
+        secColor: 'text-blue-200'
+      };
+    } else if (brand === 'MASTERCARD') {
+      return {
+        bg: 'bg-gradient-to-tr from-neutral-950 via-neutral-900 to-neutral-800 border-neutral-700/50',
+        brandLogo: (
+          <div className="flex items-center -space-x-2 select-none">
+            <div className="w-5 h-5 rounded-full bg-[#EB001B] opacity-90 shadow-sm" />
+            <div className="w-5 h-5 rounded-full bg-[#F79E1B] opacity-90 shadow-sm" />
+          </div>
+        ),
+        textColor: 'text-white',
+        secColor: 'text-neutral-400'
+      };
+    } else if (brand === 'AMEX' || brand === 'AMERICAN EXPRESS') {
+      return {
+        bg: 'bg-gradient-to-tr from-slate-400 via-slate-200 to-slate-350 dark:from-slate-755 dark:via-slate-800 dark:to-slate-655 border-slate-300/40',
+        brandLogo: (
+          <div className="bg-[#0070D1] border border-white/20 rounded px-1.5 py-0.5 text-[8px] font-black tracking-tighter text-white uppercase text-center leading-none select-none">
+            AMEX
+          </div>
+        ),
+        textColor: 'text-slate-900 dark:text-white',
+        secColor: 'text-slate-600 dark:text-slate-400'
+      };
+    } else {
+      return {
+        bg: 'bg-gradient-to-tr from-rose-950 via-neutral-900 to-neutral-900 border-rose-955/30',
+        brandLogo: (
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">SimplePay</span>
+        ),
+        textColor: 'text-white',
+        secColor: 'text-slate-400'
+      };
+    }
+  };
+
+  const renderCard = (c) => {
+    const style = getCardStyle(c.brand);
+    const number = c.last4 ? `•••• •••• •••• ${c.last4}` : c.card_number || '•••• •••• •••• 4242';
+    const holder = c.cardholder_name || 'Alexander Bisht';
+    const m = c.exp_month || '12';
+    const y = c.exp_year || '2028';
+    
+    return (
+      <div className={`w-full aspect-[1.58/1] rounded-[20px] p-5 ${style.bg} relative overflow-hidden shadow-lg border flex flex-col justify-between group/card transition-all duration-300`}>
+        {/* Iridescent gloss glare */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-white/[0.08] pointer-events-none" />
+        <div className="absolute top-0 right-0 bottom-0 left-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent pointer-events-none" />
+        
+        {/* Card Header: Chip, Contactless Icon, and Brand Logo */}
+        <div className="flex justify-between items-center z-10">
+          <div className="flex items-center gap-3">
+            {/* Real Gold Microchip */}
+            <div className="w-9 h-6.5 rounded bg-gradient-to-tr from-yellow-300 via-amber-400 to-yellow-200 p-0.5 relative overflow-hidden border border-amber-500/30 shadow-inner shrink-0">
+              <div className="absolute inset-0 opacity-20 border border-slate-900/60 rounded-[2px]" />
+              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-slate-900/30" />
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-slate-900/30" />
+              <div className="absolute inset-y-1 left-1/4 right-1/4 border-x border-slate-900/30" />
+              <div className="absolute inset-x-1 top-1/4 bottom-1/4 border-y border-slate-900/30" />
+            </div>
+            
+            {/* Contactless waves symbol */}
+            <svg className={`w-3.5 h-3.5 ${style.textColor} opacity-60`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M2 8a7.5 7.5 0 0 1 0 8M6 5.5a11 11 0 0 1 0 13M10 3a14.5 14.5 0 0 1 0 18" />
+            </svg>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Hologram patch for extra premium look */}
+            <div className="w-5 h-4.5 rounded bg-gradient-to-tr from-cyan-300 via-pink-400 to-yellow-300 opacity-50 border border-white/10 shadow-sm shrink-0 mix-blend-screen" />
+            {style.brandLogo}
+          </div>
+        </div>
+
+        {/* Card Number: styled mono font */}
+        <div className={`text-base sm:text-lg font-mono tracking-widest text-center ${style.textColor} font-semibold z-10`}>
+          {number}
+        </div>
+
+        {/* Card Footer: Cardholder and Expiry */}
+        <div className="flex justify-between items-end z-10">
+          <div>
+            <span className={`text-[8px] uppercase tracking-wider ${style.secColor} block font-bold`}>Card Holder</span>
+            <span className={`text-xs uppercase font-extrabold tracking-wide ${style.textColor}`}>{holder}</span>
+          </div>
+          <div>
+            <span className={`text-[8px] uppercase tracking-wider ${style.secColor} block font-bold`}>Expires</span>
+            <span className={`text-xs font-extrabold ${style.textColor}`}>{m}/{y.slice(-2)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const onCardNumChange = (val) => {
     setCardNum(val);
     if (val.length >= 4) {
@@ -2200,43 +2306,24 @@ function CardsView({
           <div className="bg-card/40 border border-border glass rounded-[32px] p-6 shadow-sm flex flex-col items-center">
             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Live Preview Widget</div>
             
-            <div className="w-full aspect-[1.58/1] rounded-[24px] p-6 text-white bg-gradient-to-tr from-blue-600 to-indigo-700 relative overflow-hidden shadow-xl border border-white/20">
-              <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_60%)] pointer-events-none" />
-              <div className="flex justify-between items-center mb-6">
-                <div className="w-10 h-8 rounded-lg bg-gradient-to-tr from-yellow-100 to-amber-200 border border-white/40 relative">
-                  <div className="absolute inset-y-0 left-1/3 right-1/3 border-x border-slate-900/10" />
-                  <div className="absolute inset-x-0 top-1/3 bottom-1/3 border-y border-slate-900/10" />
-                </div>
-                <span className="text-sm font-extrabold italic tracking-tight">{liveBrand}</span>
-              </div>
-
-              <div className="text-lg md:text-xl font-mono tracking-widest mb-6 text-center">{liveNum}</div>
-              
-              <div className="flex justify-between items-end">
-                <div>
-                  <span className="text-[8px] uppercase tracking-wider text-blue-200 block">Card Holder</span>
-                  <span className="text-xs uppercase font-extrabold">{cardHolder}</span>
-                </div>
-                <div>
-                  <span className="text-[8px] uppercase tracking-wider text-blue-200 block">Expires</span>
-                  <span className="text-xs font-bold">{expMonth}/{expYear.slice(-2)}</span>
-                </div>
-              </div>
-            </div>
+            {renderCard({
+              brand: liveBrand,
+              card_number: cardNum || '•••• •••• •••• 4242',
+              cardholder_name: cardHolder,
+              exp_month: expMonth,
+              exp_year: expYear
+            })}
           </div>
 
           {/* Stored cards list */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {cards.map(c => (
-              <div
-                key={c.card_id}
-                className="p-5 bg-card/40 border border-border rounded-[24px] relative overflow-hidden shadow-sm hover:scale-[1.01] transition-all"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-xs font-black italic">{c.brand}</span>
-                  <div className="flex gap-2">
+              <div key={c.card_id} className="space-y-2 max-w-[380px] mx-auto w-full">
+                {/* Action header bar */}
+                <div className="flex justify-between items-center px-1">
+                  <div className="flex items-center gap-1.5">
                     {c.is_default ? (
-                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-extrabold rounded-full">DEFAULT</span>
+                      <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-extrabold rounded-full uppercase tracking-wider">DEFAULT</span>
                     ) : (
                       <button
                         onClick={async () => {
@@ -2246,33 +2333,30 @@ function CardsView({
                           });
                           refreshData();
                         }}
-                        className="text-[9px] font-extrabold text-blue-500 hover:underline"
+                        className="text-[9px] font-extrabold text-blue-500 hover:text-blue-600 hover:underline"
                       >
                         Set Default
                       </button>
                     )}
-                    <button
-                      onClick={async () => {
-                        if (!confirm('Remove card?')) return;
-                        await fetch(`/api/proxy/cards/${c.card_id}`, {
-                          method: 'DELETE',
-                          headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        refreshData();
-                      }}
-                      className="text-rose-500 p-0.5 hover:bg-rose-500/10 rounded"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Remove card?')) return;
+                      await fetch(`/api/proxy/cards/${c.card_id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      refreshData();
+                    }}
+                    className="text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-full transition-all"
+                    title="Remove Card"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-
-                <div className="text-sm font-mono tracking-widest mb-4">•••• •••• •••• {c.last4}</div>
                 
-                <div className="flex justify-between text-xs">
-                  <span className="font-bold text-slate-500">{c.cardholder_name.toUpperCase()}</span>
-                  <span className="font-semibold text-slate-400">{c.exp_month}/{c.exp_year.slice(-2)}</span>
-                </div>
+                {/* Visual credit card component */}
+                {renderCard(c)}
               </div>
             ))}
 
