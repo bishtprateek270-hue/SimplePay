@@ -764,6 +764,7 @@ export default function App() {
               <DashboardView
                 stats={stats}
                 payments={payments}
+                profile={profile}
                 setCurrentTab={setCurrentTab}
                 setSelectedReceipt={setSelectedReceipt}
                 triggerSeed={async () => {
@@ -1162,6 +1163,7 @@ function CreditCardIcon(props) {
 function DashboardView({ 
   stats, 
   payments, 
+  profile,
   setCurrentTab, 
   setSelectedReceipt, 
   triggerSeed,
