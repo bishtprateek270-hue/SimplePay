@@ -56,7 +56,6 @@ export default function App() {
   const [cards, setCards] = useState([]);
   const [profile, setProfile] = useState({});
   const [logs, setLogs] = useState([]);
-  const [dbStatus, setDbStatus] = useState('Connecting...');
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
   const [showAuthPassword, setShowAuthPassword] = useState(false);
@@ -271,10 +270,6 @@ export default function App() {
 
       // Fetch Health
       const resHealth = await fetch('/api/proxy/health', { headers });
-      if (resHealth.ok) {
-        const health = await resHealth.json();
-        setDbStatus(health.database === 'connected' ? 'Replica Set Online' : 'Offline');
-      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -537,13 +532,7 @@ export default function App() {
         </div>
 
         <div className="space-y-4">
-          <div className="p-4 bg-secondary/50 dark:bg-secondary/20 rounded-2xl border border-border">
-            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Database status</div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-glow-success" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{dbStatus}</span>
-            </div>
-          </div>
+
 
           <div className="flex justify-between items-center">
             <button
