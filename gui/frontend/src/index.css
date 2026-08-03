@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 230 40% 98%;
+    --background: 220 20% 97.5%;
     --foreground: 224 71.4% 4.1%;
 
     --card: 0 0% 100%;
@@ -13,26 +13,26 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
 
-    --primary: 250 85% 58%;
+    --primary: 220 85% 55%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 220 20% 94%;
+    --secondary: 220 20% 95%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 220 20% 94%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 320 80% 60%;
+    --accent: 220 85% 55%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 20% 90%;
-    --input: 220 20% 90%;
-    --ring: 250 85% 58%;
+    --border: 220 20% 92%;
+    --input: 220 20% 92%;
+    --ring: 220 85% 55%;
 
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 
   .dark {
@@ -45,7 +45,7 @@
     --popover: 230 35% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 250 90% 65%;
+    --primary: 220 90% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 230 30% 15%;
@@ -54,7 +54,7 @@
     --muted: 230 30% 15%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 320 85% 65%;
+    --accent: 220 90% 60%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 72% 51%;
@@ -62,7 +62,7 @@
 
     --border: 230 25% 15%;
     --input: 230 25% 15%;
-    --ring: 250 90% 65%;
+    --ring: 220 90% 60%;
   }
 }
 
@@ -72,7 +72,25 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Outfit', 'Poppins', 'Inter', sans-serif;
   }
+}
+
+/* Premium gradient & card patterns */
+.bg-gradient-hero {
+  background: linear-gradient(135deg, #3B6FE0 0%, #1E3A8A 100%);
+}
+
+.soft-card {
+  background: hsl(var(--card));
+  border: 1px solid rgba(228, 230, 235, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02), 0 2px 10px rgba(0, 0, 0, 0.01);
+}
+
+.dark .soft-card {
+  background: rgba(15, 22, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 }
 
 /* Glassmorphism custom components */
