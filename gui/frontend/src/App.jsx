@@ -211,6 +211,156 @@ export default function App() {
   const [showChargeModal, setShowChargeModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
+  // Process Charge 4-Digit Security OTP States
+  const [showChargeOtpModal, setShowChargeOtpModal] = useState(false);
+  const [chargeOtpCode, setChargeOtpCode] = useState('');
+  const [enteredChargeOtp, setEnteredChargeOtp] = useState('');
+  const [chargeOtpError, setChargeOtpError] = useState('');
+  const [chargeResendNotice, setChargeResendNotice] = useState('');
+  const [pendingChargeData, setPendingChargeData] = useState(null);
+
+  const handleInitiateCharge = (e) => {
+    e.preventDefault();
+    const customerName = document.getElementById('charge_customer').value;
+    const amount = parseFloat(document.getElementById('charge_amount').value);
+    const currency = document.getElementById('charge_currency').value;
+    const description = document.getElementById('charge_desc').value;
+
+    if (!customerName || isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid customer name and amount greater than 0");
+      return;
+    }
+
+    setPendingChargeData({ customerName, amount, currency, description });
+    const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+    setChargeOtpCode(newCode);
+    setEnteredChargeOtp('');
+    setChargeOtpError('');
+    setChargeResendNotice(`📱 SMS Security Alert: Your 4-digit OTP code to authorize charge is ${newCode}`);
+    setShowChargeOtpModal(true);
+  };
+
+  const handleExecuteChargeWithOtp = async (e) => {
+    e.preventDefault();
+    if (enteredChargeOtp.trim() !== chargeOtpCode) {
+      setChargeOtpError('❌ Incorrect OTP code. Please enter the 4-digit code shown above.');
+      return;
+    }
+
+    setLoading(true);
+    setChargeOtpError('');
+    const { customerName, amount, currency, description } = pendingChargeData;
+
+    try {
+      const resIntent = await fetch('/api/proxy/payments/create-intent', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          customer_name: customerName,
+          amount: amount,
+          currency: currency,
+          description: description
+        })
+      });
+
+      if (!resIntent.ok) {
+        const errorData = await resIntent.json();
+        throw new Error(errorData.error || "Failed to initiate payment transaction");
+      }
+
+      const intentData = await resIntent.json();
+      const { client_secret, transaction_id, mock } = intentData;
+
+      if (mock) {
+        await new Promise(r => setTimeout(r, 1000));
+
+        const resConfirm = await fetch('/api/proxy/payments/confirm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            transaction_id: transaction_id,
+            status: 'SUCCESS',
+            card_last4: '4242',
+            brand: 'Visa'
+          })
+        });
+
+        if (resConfirm.ok) {
+          alert('✅ Charge authorized & processed successfully with 4-Digit OTP!');
+          setShowChargeOtpModal(false);
+          setShowChargeModal(false);
+          refreshData();
+        } else {
+          throw new Error("Stripe mock confirmation failed");
+        }
+      } else {
+        if (!stripe || !stripeCardElement) {
+          throw new Error("Stripe components failed to initialize properly");
+        }
+
+        const result = await stripe.confirmCardPayment(client_secret, {
+          payment_method: {
+            card: stripeCardElement,
+            billing_details: { name: customerName }
+          }
+        });
+
+        if (result.error) {
+          await fetch('/api/proxy/payments/confirm', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transaction_id: transaction_id,
+              status: 'FAILED'
+            })
+          });
+          throw new Error(result.error.message);
+        } else {
+          if (result.paymentIntent.status === 'succeeded') {
+            const last4 = result.paymentIntent.payment_method_details?.card?.last4 || '4242';
+            const brand = result.paymentIntent.payment_method_details?.card?.brand || 'Visa';
+
+            const resConfirm = await fetch('/api/proxy/payments/confirm', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                transaction_id: transaction_id,
+                status: 'SUCCESS',
+                card_last4: last4,
+                brand: brand
+              })
+            });
+
+            if (resConfirm.ok) {
+              alert('✅ Payment authorized & processed via Stripe with 4-Digit OTP!');
+              setShowChargeOtpModal(false);
+              setShowChargeModal(false);
+              refreshData();
+            } else {
+              throw new Error("Payment succeeded but server transaction log failed");
+            }
+          }
+        }
+      }
+    } catch(err) {
+      setChargeOtpError(`❌ Charge failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Stripe Integration States
   const [stripe, setStripe] = useState(null);
   const [stripeKey, setStripeKey] = useState('');
@@ -890,124 +1040,7 @@ export default function App() {
                 <button onClick={() => setShowChargeModal(false)} className="text-slate-400 hover:text-slate-600 font-semibold text-lg">&times;</button>
               </div>
 
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                const customerName = document.getElementById('charge_customer').value;
-                const amount = parseFloat(document.getElementById('charge_amount').value);
-                const currency = document.getElementById('charge_currency').value;
-                const description = document.getElementById('charge_desc').value;
-
-                try {
-                  const resIntent = await fetch('/api/proxy/payments/create-intent', {
-                    method: 'POST',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                      customer_name: customerName,
-                      amount: amount,
-                      currency: currency,
-                      description: description
-                    })
-                  });
-
-                  if (!resIntent.ok) {
-                    const errorData = await resIntent.json();
-                    throw new Error(errorData.error || "Failed to initiate payment transaction");
-                  }
-
-                  const intentData = await resIntent.json();
-                  const { client_secret, transaction_id, mock } = intentData;
-
-                  if (mock) {
-                    // Simulate Stripe payment validation progress
-                    await new Promise(r => setTimeout(r, 1200));
-
-                    const resConfirm = await fetch('/api/proxy/payments/confirm', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                      },
-                      body: JSON.stringify({
-                        transaction_id: transaction_id,
-                        status: 'SUCCESS',
-                        card_last4: '4242',
-                        brand: 'Visa'
-                      })
-                    });
-
-                    if (resConfirm.ok) {
-                      alert('✅ Charge processed successfully (Mock Stripe)!');
-                      setShowChargeModal(false);
-                      refreshData();
-                    } else {
-                      throw new Error("Stripe mock confirmation failed");
-                    }
-                  } else {
-                    if (!stripe || !stripeCardElement) {
-                      throw new Error("Stripe components failed to initialize properly");
-                    }
-
-                    const result = await stripe.confirmCardPayment(client_secret, {
-                      payment_method: {
-                        card: stripeCardElement,
-                        billing_details: {
-                          name: customerName
-                        }
-                      }
-                    });
-
-                    if (result.error) {
-                      await fetch('/api/proxy/payments/confirm', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                          transaction_id: transaction_id,
-                          status: 'FAILED'
-                        })
-                      });
-                      throw new Error(result.error.message);
-                    } else {
-                      if (result.paymentIntent.status === 'succeeded') {
-                        const last4 = result.paymentIntent.payment_method_details?.card?.last4 || '4242';
-                        const brand = result.paymentIntent.payment_method_details?.card?.brand || 'Visa';
-
-                        const resConfirm = await fetch('/api/proxy/payments/confirm', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                          },
-                          body: JSON.stringify({
-                            transaction_id: transaction_id,
-                            status: 'SUCCESS',
-                            card_last4: last4,
-                            brand: brand
-                          })
-                        });
-
-                        if (resConfirm.ok) {
-                          alert('✅ Payment authorized and processed successfully via Stripe!');
-                          setShowChargeModal(false);
-                          refreshData();
-                        } else {
-                          throw new Error("Payment succeeded but server transaction log failed");
-                        }
-                      }
-                    }
-                  }
-                } catch(err) {
-                  alert(`❌ Charge failed: ${err.message}`);
-                } finally {
-                  setLoading(false);
-                }
-              }}>
+              <form onSubmit={handleInitiateCharge}>
                 <div className="p-6 space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Customer / Business Name</label>
@@ -1046,6 +1079,112 @@ export default function App() {
                 <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-white/5 flex justify-end gap-3">
                   <button type="button" onClick={() => setShowChargeModal(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800">Cancel</button>
                   <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/10">Authorize Charge</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4-Digit Security OTP Modal for Charge Authorization */}
+      <AnimatePresence>
+        {showChargeOtpModal && pendingChargeData && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 z-[110]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border border-slate-200/50 dark:border-white/10 shadow-2xl p-6 sm:p-8 space-y-6 relative"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto text-white shadow-lg shadow-indigo-500/20">
+                  <Shield className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Authorize Charge OTP</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Enter the 4-digit security code to confirm authorization of this transaction charge.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3">
+                <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 animate-bounce" />
+                <div className="text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                  {chargeResendNotice}
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/50 dark:border-white/5 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Charge Amount:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                    {formatCurrency(pendingChargeData.amount, pendingChargeData.currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Customer / Business:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{pendingChargeData.customerName}</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleExecuteChargeWithOtp} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
+                    Enter 4-Digit Security OTP
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    autoFocus
+                    className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-center text-2xl font-black tracking-[0.8em] text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                    placeholder="••••"
+                    value={enteredChargeOtp}
+                    onChange={e => setEnteredChargeOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    required
+                  />
+                </div>
+
+                {chargeOtpError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs text-center font-semibold">
+                    {chargeOtpError}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-slate-400">Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+                      setChargeOtpCode(newCode);
+                      setEnteredChargeOtp('');
+                      setChargeOtpError('');
+                      setChargeResendNotice(`📱 New SMS Code Sent: ${newCode}`);
+                    }}
+                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                  >
+                    Resend New OTP 🔄
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChargeOtpModal(false);
+                      setEnteredChargeOtp('');
+                      setChargeOtpError('');
+                    }}
+                    className="py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || enteredChargeOtp.length !== 4}
+                    className="py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Authorize & Charge ⚡'}
+                  </button>
                 </div>
               </form>
             </motion.div>
@@ -2864,6 +3003,23 @@ function BillsView({
   const [couponCode, setCouponCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
 
+  // 4-Digit Security OTP State
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [resendNotice, setResendNotice] = useState('');
+  const [pendingBillPayment, setPendingBillPayment] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const generateOtpCode = () => {
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(code);
+    setEnteredOtp('');
+    setOtpError('');
+    return code;
+  };
+
   const handleApplyCoupon = () => {
     if (couponCode.toUpperCase() === 'CASHBACK10') {
       setDiscountPercent(10);
@@ -2873,54 +3029,26 @@ function BillsView({
     }
   };
 
-  const handlePayUtility = async (e) => {
+  const handleInitiateUtilityPay = (e) => {
     e.preventDefault();
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) return;
+    if (!amt || amt <= 0) {
+      alert("Please enter a valid amount greater than 0");
+      return;
+    }
 
     if (amt > walletBalance) {
       alert("Insufficient wallet balance.");
       return;
     }
 
-    setWalletBalance(prev => prev - amt);
-    
-    await addTransaction({
-      customer_name: biller || `${utilityType} Biller`,
-      amount: amt,
-      currency: "USD",
-      payment_method: "Wallet",
-      description: `${utilityType} Bill Payment (Acc: ${accountNum})`,
-      status: "SUCCESS"
-    });
-
-    let cashbackMsg = '';
-    if (discountPercent > 0) {
-      const cbAmt = amt * (discountPercent / 100);
-      setWalletBalance(prev => prev + cbAmt);
-      cashbackMsg = ` You earned $${cbAmt.toFixed(2)} cashback!`;
-      
-      setNotifications(prev => [
-        { id: Date.now() + 1, title: 'Cashback Received! 🎁', msg: `Earned $${cbAmt.toFixed(2)} cashback on ${utilityType} bill.`, time: 'Just now', read: false },
-        ...prev
-      ]);
-    }
-
-    setNotifications(prev => [
-      { id: Date.now(), title: 'Bill Paid Successfully 🧾', msg: `Paid utility bill of $${amt.toFixed(2)} to ${biller || utilityType}.${cashbackMsg}`, time: 'Just now', read: false },
-      ...prev
-    ]);
-
-    alert(`✅ Utility Bill Paid! $${amt.toFixed(2)} deducted from wallet.${cashbackMsg}`);
-    
-    setBiller('');
-    setAccountNum('');
-    setAmount('0.00');
-    setCouponCode('');
-    setDiscountPercent(0);
+    const code = generateOtpCode();
+    setPendingBillPayment({ type: 'utility', amt });
+    setResendNotice(`📱 SMS Security Alert: Your 4-digit code to pay ${utilityType} bill is ${code}`);
+    setShowOtpModal(true);
   };
 
-  const handleMobileRecharge = async (e) => {
+  const handleInitiateMobileRecharge = (e) => {
     e.preventDefault();
     const amt = parseFloat(rechargePlan);
     if (!amt || amt <= 0) return;
@@ -2930,24 +3058,82 @@ function BillsView({
       return;
     }
 
-    setWalletBalance(prev => prev - amt);
+    const code = generateOtpCode();
+    setPendingBillPayment({ type: 'mobile', amt });
+    setResendNotice(`📱 SMS Security Alert: Your 4-digit code for Mobile Recharge is ${code}`);
+    setShowOtpModal(true);
+  };
 
-    await addTransaction({
-      customer_name: operator,
-      amount: amt,
-      currency: "USD",
-      payment_method: "Wallet",
-      description: `Mobile Recharge (${phoneNum})`,
-      status: "SUCCESS"
-    });
+  const handleVerifyAndExecuteBill = async (e) => {
+    e.preventDefault();
+    if (enteredOtp.trim() !== generatedOtp) {
+      setOtpError('❌ Incorrect OTP code. Please enter the 4-digit code shown above.');
+      return;
+    }
 
-    setNotifications(prev => [
-      { id: Date.now(), title: 'Mobile Recharged 📱', msg: `Successfully recharged ${phoneNum} with $${amt.toFixed(2)} plan.`, time: 'Just now', read: false },
-      ...prev
-    ]);
+    setLoading(true);
+    setOtpError('');
 
-    alert(`✅ Mobile Recharge Successful! $${amt.toFixed(2)} deducted from wallet.`);
-    setPhoneNum('');
+    if (pendingBillPayment.type === 'utility') {
+      const amt = pendingBillPayment.amt;
+      setWalletBalance(prev => prev - amt);
+      
+      await addTransaction({
+        customer_name: biller || `${utilityType} Biller`,
+        amount: amt,
+        currency: "USD",
+        payment_method: "Wallet",
+        description: `${utilityType} Bill Payment (Acc: ${accountNum})`,
+        status: "SUCCESS"
+      });
+
+      let cashbackMsg = '';
+      if (discountPercent > 0) {
+        const cbAmt = amt * (discountPercent / 100);
+        setWalletBalance(prev => prev + cbAmt);
+        cashbackMsg = ` You earned $${cbAmt.toFixed(2)} cashback!`;
+        
+        setNotifications(prev => [
+          { id: Date.now() + 1, title: 'Cashback Received! 🎁', msg: `Earned $${cbAmt.toFixed(2)} cashback on ${utilityType} bill.`, time: 'Just now', read: false },
+          ...prev
+        ]);
+      }
+
+      setNotifications(prev => [
+        { id: Date.now(), title: 'Bill Paid Successfully 🧾', msg: `Paid utility bill of $${amt.toFixed(2)} to ${biller || utilityType}.${cashbackMsg}`, time: 'Just now', read: false },
+        ...prev
+      ]);
+
+      alert(`✅ Utility Bill Paid with 4-Digit OTP! $${amt.toFixed(2)} deducted from wallet.${cashbackMsg}`);
+      setShowOtpModal(false);
+      setBiller('');
+      setAccountNum('');
+      setAmount('0.00');
+      setCouponCode('');
+      setDiscountPercent(0);
+    } else {
+      const amt = pendingBillPayment.amt;
+      setWalletBalance(prev => prev - amt);
+
+      await addTransaction({
+        customer_name: operator,
+        amount: amt,
+        currency: "USD",
+        payment_method: "Wallet",
+        description: `Mobile Recharge (${phoneNum})`,
+        status: "SUCCESS"
+      });
+
+      setNotifications(prev => [
+        { id: Date.now(), title: 'Mobile Recharged 📱', msg: `Successfully recharged ${phoneNum} with $${amt.toFixed(2)} plan.`, time: 'Just now', read: false },
+        ...prev
+      ]);
+
+      alert(`✅ Mobile Recharge Successful with 4-Digit OTP! $${amt.toFixed(2)} deducted from wallet.`);
+      setShowOtpModal(false);
+      setPhoneNum('');
+    }
+    setLoading(false);
   };
 
   return (
@@ -2968,7 +3154,7 @@ function BillsView({
       </div>
 
       {billType === 'utility' ? (
-        <form onSubmit={handlePayUtility} className="space-y-4">
+        <form onSubmit={handleInitiateUtilityPay} className="space-y-4">
           <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-white">Pay Utility Bills</h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3058,7 +3244,7 @@ function BillsView({
           </div>
         </form>
       ) : (
-        <form onSubmit={handleMobileRecharge} className="space-y-4">
+        <form onSubmit={handleInitiateMobileRecharge} className="space-y-4">
           <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-white">Mobile Prepaid/Postpaid Recharge</h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3128,6 +3314,111 @@ function BillsView({
           </div>
         </form>
       )}
+
+      {/* 4-Digit Security OTP Modal for Bills & Recharge */}
+      <AnimatePresence>
+        {showOtpModal && pendingBillPayment && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 z-[110]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border border-slate-200/50 dark:border-white/10 shadow-2xl p-6 sm:p-8 space-y-6 relative"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto text-white shadow-lg shadow-indigo-500/20">
+                  <Shield className="w-7 h-7" />
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Security OTP Verification</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Enter the 4-digit security code to confirm authorization for this bill payment.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3">
+                <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 animate-bounce" />
+                <div className="text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                  {resendNotice}
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/50 dark:border-white/5 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Payment Amount:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+                    {formatCurrency(pendingBillPayment.amt)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Category / Destination:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {pendingBillPayment.type === 'utility' ? (biller || utilityType) : `${operator} (${phoneNum})`}
+                  </span>
+                </div>
+              </div>
+
+              <form onSubmit={handleVerifyAndExecuteBill} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
+                    Enter 4-Digit Security OTP
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    autoFocus
+                    className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-center text-2xl font-black tracking-[0.8em] text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                    placeholder="••••"
+                    value={enteredOtp}
+                    onChange={e => setEnteredOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    required
+                  />
+                </div>
+
+                {otpError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs text-center font-semibold">
+                    {otpError}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-slate-400">Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newCode = generateOtpCode();
+                      setResendNotice(`📱 New SMS Code Sent: ${newCode}`);
+                    }}
+                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                  >
+                    Resend New OTP 🔄
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOtpModal(false);
+                      setEnteredOtp('');
+                      setOtpError('');
+                    }}
+                    className="py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-2xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || enteredOtp.length !== 4}
+                    className="py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Verify & Pay Bill 🧾'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
