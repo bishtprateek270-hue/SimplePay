@@ -10,7 +10,6 @@ import {
   User,
   Settings,
   History,
-  FileCode,
   Shield,
   Eye,
   EyeOff,
@@ -39,7 +38,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('dashboard'); // dashboard, send, history, cards, qr, profile, dev
+  const [currentTab, setCurrentTab] = useState('dashboard'); // dashboard, send, history, cards, qr, profile
   const [token, setToken] = useState(localStorage.getItem('simplepay_token') || '');
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('simplepay_user')) || null);
   const [authView, setAuthView] = useState('login'); // login, register
@@ -515,8 +514,7 @@ export default function App() {
               { id: 'history', label: 'History', icon: History },
               { id: 'cards', label: 'Cards Wallet', icon: CreditCardIcon },
               { id: 'qr', label: 'QR Payments', icon: QrCode },
-              { id: 'profile', label: 'Merchant Profile', icon: User },
-              { id: 'dev', label: 'API Explorer', icon: FileCode }
+              { id: 'profile', label: 'Merchant Profile', icon: User }
             ].map(item => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
@@ -816,10 +814,6 @@ export default function App() {
                 darkMode={darkMode}
                 toggleTheme={toggleTheme}
               />
-            )}
-
-            {currentTab === 'dev' && (
-              <DevView token={token} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -3048,16 +3042,6 @@ function ProfileView({
   const [email, setEmail] = useState(profile.email || '');
   const [org, setOrg] = useState(profile.organization || '');
   const [webhook, setWebhook] = useState(profile.webhook_url || '');
-  const [showKey, setShowKey] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const keyVal = profile.api_key || 'sk_live_9f82a10b4c739e1204d';
-
-  const copyKey = () => {
-    navigator.clipboard.writeText(keyVal);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -3116,26 +3100,6 @@ function ProfileView({
 
       {/* Security Credentials */}
       <div className="space-y-6">
-        <div className="bg-card/45 border border-border glass rounded-[32px] p-6 shadow-sm">
-          <h3 className="text-base font-extrabold tracking-tight mb-2">Live API credentials</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Incorporate this secret key to route integrations safely.</p>
-
-          <div className="flex gap-2 mb-4">
-            <input
-              type={showKey ? 'text' : 'password'}
-              className="flex-1 bg-secondary/50 dark:bg-secondary/40 border border-border rounded-xl px-4 py-2.5 text-xs font-mono focus:outline-none text-foreground"
-              value={keyVal}
-              readOnly
-            />
-            <button type="button" onClick={()=>setShowKey(!showKey)} className="p-2 rounded-xl bg-secondary hover:bg-secondary/60 text-slate-500 border border-border">
-              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-            <button type="button" onClick={copyKey} className="p-2 rounded-xl bg-secondary hover:bg-secondary/60 text-slate-500 border border-border">
-              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
         {/* Security configuration */}
         <div className="bg-card/45 border border-border glass rounded-[32px] p-6 shadow-sm">
           <h3 className="text-base font-extrabold tracking-tight mb-6">Security configuration</h3>
@@ -3236,63 +3200,7 @@ function ProfileView({
   );
 }
 
-function DevView({ token }) {
-  const [curlOutput, setCurlOutput] = useState('curl -X GET http://payment-service:5000/health');
-  const [jsonOutput, setJsonOutput] = useState('Click an endpoint trigger to view response...');
 
-  const triggerCall = async (endpoint, method) => {
-    setCurlOutput(`curl -X ${method} http://payment-service:5000${endpoint}`);
-    setJsonOutput('Triggering REST API connection...');
-    try {
-      const proxyPath = `/api/proxy${endpoint.replace('/api', '')}`;
-      const res = await fetch(proxyPath, {
-        method,
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setJsonOutput(JSON.stringify(data, null, 2));
-    } catch(err) {
-      setJsonOutput(JSON.stringify({ error: err.message }, null, 2));
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-      <div className="bg-white/70 dark:bg-slate-900/60 glass rounded-[32px] p-6 shadow-sm">
-        <h3 className="text-base font-extrabold tracking-tight mb-6">Dev REST Endpoints</h3>
-        <div className="space-y-2">
-          {[
-            { path: '/health', method: 'GET' },
-            { path: '/api/stats', method: 'GET' },
-            { path: '/api/payments', method: 'GET' },
-            { path: '/api/activity-logs', method: 'GET' },
-            { path: '/api/seed', method: 'POST' }
-          ].map(e => (
-            <button
-              key={e.path}
-              onClick={() => triggerCall(e.path, e.method)}
-              className="w-full flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 rounded-xl border border-slate-200/50 dark:border-white/5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all"
-            >
-              <code className="font-mono">{e.path}</code>
-              <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold ${e.method === 'GET' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{e.method}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-slate-950 text-emerald-400 font-mono p-6 rounded-[32px] border border-white/5 shadow-xl space-y-4">
-        <div>
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-bold font-sans">cURL Equivalent</div>
-          <pre className="text-xs bg-slate-900/50 p-3 rounded-xl border border-white/5 overflow-x-auto text-amber-400">{curlOutput}</pre>
-        </div>
-        <div>
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-bold font-sans">JSON Response Body</div>
-          <pre className="text-xs bg-slate-900/50 p-4 rounded-xl border border-white/5 overflow-x-auto min-h-[180px] max-h-[300px] text-sky-400">{jsonOutput}</pre>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Utility: format currency
 function formatCurrency(amount, currency = 'USD') {

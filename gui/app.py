@@ -47,7 +47,6 @@ def call_backend(endpoint, method="GET", json_data=None, params=None, headers=No
 @app.route('/qr-payments')
 @app.route('/profile')
 @app.route('/analytics')
-@app.route('/api-inspector')
 def index():
     return send_from_directory(os.path.join(app.static_folder, 'dist'), 'index.html')
 
