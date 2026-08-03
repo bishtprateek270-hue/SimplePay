@@ -1344,66 +1344,26 @@ function DashboardView({
             </div>
           </div>
 
-          {/* Card 1: Merchant Sales Volume (Restyled to premium dark Mastercard Card) */}
-          <div className="bg-gradient-to-tr from-neutral-950 via-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-[24px] p-6 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-            {/* Iridescent gloss glare */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none" />
-            
-            <div>
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-neutral-400">Merchant Sales Volume</div>
-                  <div className="text-2xl font-black font-mono tracking-tight mt-1 text-white">
-                    {formatCurrency(stats?.total_volume || 0)}
-                  </div>
-                </div>
-                
-                {/* Microchip and Contactless symbol */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-6 rounded bg-gradient-to-tr from-yellow-300 via-amber-400 to-yellow-200 p-0.5 relative overflow-hidden border border-amber-500/30 shadow-inner shrink-0">
-                    <div className="absolute inset-0 opacity-20 border border-slate-900/60 rounded-[2px]" />
-                    <div className="absolute inset-y-0 left-1/3 right-1/3 border-x border-slate-900/30" />
-                    <div className="absolute inset-x-0 top-1/3 bottom-1/3 border-y border-slate-900/30" />
-                  </div>
-                  <svg className="w-3.5 h-3.5 text-neutral-400 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M2 8a7.5 7.5 0 0 1 0 8M6 5.5a11 11 0 0 1 0 13M10 3a14.5 14.5 0 0 1 0 18" />
-                  </svg>
-                </div>
-              </div>
-              
-              {/* Masked Card Number representing merchant account */}
-              <div className="text-sm font-mono tracking-widest text-neutral-400 my-2 select-none">
-                •••• •••• •••• 5544
-              </div>
-              
-              <p className="text-[10px] text-neutral-400 font-medium">
-                SLA: <strong className="text-white">{stats?.success_rate || 0}%</strong> success rate across <strong className="text-white">{stats?.total_transactions || 0}</strong> authorizations
-              </p>
-            </div>
-
-            {/* Quick Actions grid inside the volume card, styled as requested */}
-            <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-neutral-700/50 text-center items-end">
-              <button onClick={() => setCurrentTab('send')} className="flex flex-col items-center gap-1 hover:scale-105 transition-all">
-                <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center"><Send className="w-3.5 h-3.5" /></div>
-                <span className="text-[8px] font-bold text-neutral-400">Send</span>
+          {/* Quick Actions Grid */}
+          <div className="soft-card rounded-[24px] p-5">
+            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Quick Shortcuts</div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <button onClick={() => setCurrentTab('send')} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center"><Send className="w-4 h-4" /></div>
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Send</span>
               </button>
-              <button onClick={() => setCurrentTab('qr')} className="flex flex-col items-center gap-1 hover:scale-105 transition-all">
-                <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center"><QrCode className="w-3.5 h-3.5" /></div>
-                <span className="text-[8px] font-bold text-neutral-400">Scan</span>
+              <button onClick={() => setCurrentTab('qr')} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 flex items-center justify-center"><QrCode className="w-4 h-4" /></div>
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Scan</span>
               </button>
-              <button onClick={() => setCurrentTab('cards')} className="flex flex-col items-center gap-1 hover:scale-105 transition-all">
-                <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center"><Wallet className="w-3.5 h-3.5" /></div>
-                <span className="text-[8px] font-bold text-neutral-400">Cards</span>
+              <button onClick={() => setCurrentTab('cards')} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Cards</span>
               </button>
-              
-              {/* Mastercard circles logo next to Action items */}
-              <div className="flex flex-col items-center justify-center">
-                <div className="flex items-center -space-x-2 select-none mb-1">
-                  <div className="w-4 h-4 rounded-full bg-[#EB001B] opacity-90 shadow-sm" />
-                  <div className="w-4 h-4 rounded-full bg-[#F79E1B] opacity-90 shadow-sm" />
-                </div>
-                <span className="text-[7px] text-neutral-400 font-bold uppercase">Mastercard</span>
-              </div>
+              <button onClick={triggerSeed} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                <div className="w-10 h-10 rounded-full bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400 flex items-center justify-center"><Database className="w-4 h-4" /></div>
+                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Seed</span>
+              </button>
             </div>
           </div>
 
