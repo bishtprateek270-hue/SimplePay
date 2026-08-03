@@ -1742,56 +1742,6 @@ function SendMoneyView({
     }
   };
 
-    e.preventDefault();
-    setLoading(true);
-
-    // Validate amount
-    const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0) {
-      alert('Please enter a valid amount greater than 0');
-      setLoading(false);
-      return;
-    }
-
-    // Build payload based on whether mobile number is used
-    const payload = {
-      amount: amt,
-      currency,
-      ...(useMobile ? { mobile_number: recipient } : { customer_name: recipient })
-    };
-
-    try {
-      const res = await fetch('/api/proxy/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (res.ok) {
-        setWalletBalance(prev => prev - amt);
-        
-        // Notify
-        setNotifications(prev => [
-          { id: Date.now(), title: 'Money Sent 💸', msg: `Successfully sent ${formatCurrency(amt, currency)} to ${recipient}.`, time: 'Just now', read: false },
-          ...prev
-        ]);
-        
-        alert(`✅ Succeeded! Sent ${formatCurrency(payload.amount, payload.currency)} to ${payload.customer_name ?? payload.mobile_number}`);
-        onSuccess();
-      } else {
-        const d = await res.json();
-        alert(`❌ Transfer failed: ${d.error}`);
-      }
-    } catch(err) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRequest = (e) => {
     e.preventDefault();
     const amt = parseFloat(amount);
@@ -2038,7 +1988,7 @@ function SendMoneyView({
                     required
                   />
                 </div>
-              )
+              )}
             </div>
 
             <div className="flex justify-end pt-2">
