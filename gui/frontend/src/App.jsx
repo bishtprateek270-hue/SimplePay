@@ -567,7 +567,7 @@ export default function App() {
               { id: 'history', label: 'History', icon: History },
               { id: 'cards', label: 'Cards Wallet', icon: CreditCardIcon },
               { id: 'qr', label: 'QR Payments', icon: QrCode },
-              { id: 'profile', label: 'Merchant Profile', icon: User }
+              { id: 'profile', label: 'Profile', icon: User }
             ].map(item => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
@@ -659,7 +659,7 @@ export default function App() {
         <header className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              Merchant Center
+              User Center
               {loading && <RefreshCw className="w-4.5 h-4.5 text-blue-500 animate-spin" />}
             </h1>
             <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
