@@ -39,8 +39,21 @@ import {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard'); // dashboard, send, history, cards, qr, profile
-  const [token, setToken] = useState(localStorage.getItem('simplepay_token') || '');
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('simplepay_user')) || null);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('simplepay_token') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('simplepay_user');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [authView, setAuthView] = useState('login'); // login, register
   
   // Auth Form State
@@ -74,51 +87,96 @@ export default function App() {
 
   // --- Digital Wallet & Banking States ---
   const [walletBalance, setWalletBalance] = useState(() => {
-    return parseFloat(localStorage.getItem('simplepay_wallet_balance')) || 5000.00;
+    try {
+      const saved = localStorage.getItem('simplepay_wallet_balance');
+      return saved && saved !== 'undefined' ? parseFloat(saved) : 5000.00;
+    } catch (e) {
+      return 5000.00;
+    }
   });
   const [linkedBanks, setLinkedBanks] = useState(() => {
-    const saved = localStorage.getItem('simplepay_linked_banks');
-    return saved ? JSON.parse(saved) : [
-      { id: 'bank-1', name: 'Chase Bank', type: 'Checking', number: '•••• 8904', routing: '121000248' },
-      { id: 'bank-2', name: 'Wells Fargo', type: 'Savings', number: '•••• 1120', routing: '121000248' }
-    ];
+    try {
+      const saved = localStorage.getItem('simplepay_linked_banks');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : [
+        { id: 'bank-1', name: 'Chase Bank', type: 'Checking', number: '•••• 8904', routing: '121000248' },
+        { id: 'bank-2', name: 'Wells Fargo', type: 'Savings', number: '•••• 1120', routing: '121000248' }
+      ];
+    } catch (e) {
+      return [
+        { id: 'bank-1', name: 'Chase Bank', type: 'Checking', number: '•••• 8904', routing: '121000248' },
+        { id: 'bank-2', name: 'Wells Fargo', type: 'Savings', number: '•••• 1120', routing: '121000248' }
+      ];
+    }
   });
   const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('simplepay_notifications');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, title: 'Welcome to SimplePay!', msg: 'Manage your wallet deposits, withdraws, and linked banks easily.', time: new Date().toLocaleTimeString(), read: false },
-      { id: 2, title: 'Cashback Earned 🎁', msg: 'You earned $5.00 cashback on your last utility payment simulation.', time: '10 mins ago', read: false }
-    ];
+    try {
+      const saved = localStorage.getItem('simplepay_notifications');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : [
+        { id: 1, title: 'Welcome to SimplePay!', msg: 'Manage your wallet deposits, withdraws, and linked banks easily.', time: new Date().toLocaleTimeString(), read: false },
+        { id: 2, title: 'Cashback Earned 🎁', msg: 'You earned $5.00 cashback on your last utility payment simulation.', time: '10 mins ago', read: false }
+      ];
+    } catch (e) {
+      return [
+        { id: 1, title: 'Welcome to SimplePay!', msg: 'Manage your wallet deposits, withdraws, and linked banks easily.', time: new Date().toLocaleTimeString(), read: false },
+        { id: 2, title: 'Cashback Earned 🎁', msg: 'You earned $5.00 cashback on your last utility payment simulation.', time: '10 mins ago', read: false }
+      ];
+    }
   });
   const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('simplepay_favorites');
-    return saved ? JSON.parse(saved) : ['prateek@simplepay.io', 'jane@company.com'];
+    try {
+      const saved = localStorage.getItem('simplepay_favorites');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : ['prateek@simplepay.io', 'jane@company.com'];
+    } catch (e) {
+      return ['prateek@simplepay.io', 'jane@company.com'];
+    }
   });
   const [contacts, setContacts] = useState(() => {
-    const saved = localStorage.getItem('simplepay_contacts');
-    return saved ? JSON.parse(saved) : [
-      { name: 'Prateek Bisht', email: 'prateek@simplepay.io', initials: 'PB', color: 'bg-emerald-500/10 text-emerald-500' },
-      { name: 'Jane Doe', email: 'jane@company.com', initials: 'JD', color: 'bg-amber-500/10 text-amber-500' },
-      { name: 'Enterprise Corp', email: 'billing@enterprise.com', initials: 'EC', color: 'bg-blue-500/10 text-blue-500' }
-    ];
+    try {
+      const saved = localStorage.getItem('simplepay_contacts');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : [
+        { name: 'Prateek Bisht', email: 'prateek@simplepay.io', initials: 'PB', color: 'bg-emerald-500/10 text-emerald-500' },
+        { name: 'Jane Doe', email: 'jane@company.com', initials: 'JD', color: 'bg-amber-500/10 text-amber-500' },
+        { name: 'Enterprise Corp', email: 'billing@enterprise.com', initials: 'EC', color: 'bg-blue-500/10 text-blue-500' }
+      ];
+    } catch (e) {
+      return [
+        { name: 'Prateek Bisht', email: 'prateek@simplepay.io', initials: 'PB', color: 'bg-emerald-500/10 text-emerald-500' },
+        { name: 'Jane Doe', email: 'jane@company.com', initials: 'JD', color: 'bg-amber-500/10 text-amber-500' },
+        { name: 'Enterprise Corp', email: 'billing@enterprise.com', initials: 'EC', color: 'bg-blue-500/10 text-blue-500' }
+      ];
+    }
   });
   const [pendingRequests, setPendingRequests] = useState(() => {
-    const saved = localStorage.getItem('simplepay_pending_requests');
-    return saved ? JSON.parse(saved) : [
-      { id: 'req-1', from: 'jane@company.com', name: 'Jane Doe', amount: 50.00, desc: 'Shared lunch', date: 'Yesterday' }
-    ];
+    try {
+      const saved = localStorage.getItem('simplepay_pending_requests');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : [
+        { id: 'req-1', from: 'jane@company.com', name: 'Jane Doe', amount: 50.00, desc: 'Shared lunch', date: 'Yesterday' }
+      ];
+    } catch (e) {
+      return [
+        { id: 'req-1', from: 'jane@company.com', name: 'Jane Doe', amount: 50.00, desc: 'Shared lunch', date: 'Yesterday' }
+      ];
+    }
   });
   const [coupons, setCoupons] = useState([
     { code: 'CASHBACK10', desc: 'Get 10% cashback on utility bill payments.', active: true },
     { code: 'FREEPASS', desc: 'No service fees on transactions this month.', active: true }
   ]);
   const [securitySettings, setSecuritySettings] = useState(() => {
-    const saved = localStorage.getItem('simplepay_security_settings');
-    return saved ? JSON.parse(saved) : { pinEnabled: true, biometricEnabled: false };
+    try {
+      const saved = localStorage.getItem('simplepay_security_settings');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : { pinEnabled: true, biometricEnabled: false };
+    } catch (e) {
+      return { pinEnabled: true, biometricEnabled: false };
+    }
   });
   const [appSettings, setAppSettings] = useState(() => {
-    const saved = localStorage.getItem('simplepay_app_settings');
-    return saved ? JSON.parse(saved) : { language: 'English', pushEnabled: true, emailAlerts: true };
+    try {
+      const saved = localStorage.getItem('simplepay_app_settings');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : { language: 'English', pushEnabled: true, emailAlerts: true };
+    } catch (e) {
+      return { language: 'English', pushEnabled: true, emailAlerts: true };
+    }
   });
   const [showNotifications, setShowNotifications] = useState(false);
 

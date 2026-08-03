@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("gui-service")
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # Backend REST API endpoint configuration
 BACKEND_URL = os.getenv("BACKEND_URL", "http://payment-service:5000").rstrip("/")
