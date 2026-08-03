@@ -1360,10 +1360,6 @@ function DashboardView({
                 <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
                 <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Cards</span>
               </button>
-              <button onClick={triggerSeed} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
-                <div className="w-10 h-10 rounded-full bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400 flex items-center justify-center"><Database className="w-4 h-4" /></div>
-                <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300">Seed</span>
-              </button>
             </div>
           </div>
 
